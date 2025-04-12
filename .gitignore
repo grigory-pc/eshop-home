@@ -61,3 +61,4 @@ log/
 build
 /uploads/
 /.idea/sonarlint/
+/.idea/
