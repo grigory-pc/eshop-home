@@ -15,6 +15,6 @@ import lombok.RequiredArgsConstructor;
 @AllArgsConstructor
 public class OrderDto {
   private Long id;
-  private List<ItemDto> title;
+  private List<ItemDto> items;
   private double totalSum;
 }

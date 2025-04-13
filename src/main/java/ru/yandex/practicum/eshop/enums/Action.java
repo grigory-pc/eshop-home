@@ -1,4 +1,4 @@
-package ru.yandex.practicum.eshop.entity;
+package ru.yandex.practicum.eshop.enums;
 
 /**
  * Enum для действий с товарами в корзине.

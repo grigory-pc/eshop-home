@@ -5,8 +5,8 @@ import org.springframework.data.domain.Page;
 import ru.yandex.practicum.eshop.dto.CartDto;
 import ru.yandex.practicum.eshop.dto.ItemDto;
 import ru.yandex.practicum.eshop.dto.OrderDto;
-import ru.yandex.practicum.eshop.entity.Action;
-import ru.yandex.practicum.eshop.entity.Sort;
+import ru.yandex.practicum.eshop.enums.Action;
+import ru.yandex.practicum.eshop.enums.Sort;
 
 /**
  * Сервис для работы с товарами.
