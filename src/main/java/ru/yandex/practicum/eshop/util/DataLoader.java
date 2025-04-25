@@ -13,9 +13,9 @@ import ru.yandex.practicum.eshop.repository.ItemRepository;
 @Component
 @RequiredArgsConstructor
 public class DataLoader implements CommandLineRunner {
-  private static final String ITEM_SHORTS_IMG_PATH = "src/main/resources/shorts.jpg";
-  private static final String ITEM_SUNGLASSES_IMG_PATH = "src/main/resources/sunglasses.jpg";
-  private static final String ITEM_TSHIRT_IMG_PATH = "src/main/resources/tshirt.jpg";
+  private static final String ITEM_SHORTS_IMG_PATH = "/images/shorts.jpg";
+  private static final String ITEM_SUNGLASSES_IMG_PATH = "/images/sunglasses.jpg";
+  private static final String ITEM_TSHIRT_IMG_PATH = "/images/tshirt.jpg";
 
   private final ItemRepository itemRepository;
 
