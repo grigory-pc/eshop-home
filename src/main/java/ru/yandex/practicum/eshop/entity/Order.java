@@ -6,6 +6,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.util.List;
@@ -32,6 +34,10 @@ public class Order {
   private Long id;
   @Column(name = "total_sum", nullable = false)
   private double totalSum;
-  @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+  //  @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+  @JoinTable(name = "order_item",
+             joinColumns = @JoinColumn(name = "order_id"),
+             inverseJoinColumns = @JoinColumn(name = "item_id"))
   private List<Item> items;
 }

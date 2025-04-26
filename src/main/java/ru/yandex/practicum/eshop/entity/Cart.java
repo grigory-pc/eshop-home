@@ -6,6 +6,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.util.List;
@@ -32,6 +34,10 @@ public class Cart {
   private Long id;
   @Column(name = "total", nullable = false)
   private double total;
-  @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
+  //  @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+  @JoinTable(name = "cart_item",
+             joinColumns = @JoinColumn(name = "cart_id"),
+             inverseJoinColumns = @JoinColumn(name = "item_id"))
   private List<Item> items;
 }
