@@ -6,7 +6,7 @@ import ru.yandex.practicum.eshop.dto.CartDto;
 import ru.yandex.practicum.eshop.dto.ItemDto;
 import ru.yandex.practicum.eshop.dto.OrderDto;
 import ru.yandex.practicum.eshop.enums.Action;
-import ru.yandex.practicum.eshop.enums.Sort;
+import ru.yandex.practicum.eshop.enums.Sorting;
 
 /**
  * Сервис для работы с товарами.
@@ -21,7 +21,7 @@ public interface ItemService {
    * @param pageSize    - количество записей.
    * @return список товаров.
    */
-  Page<ItemDto> getItems(String search, Sort sort, int pageNumber, int pageSize);
+  Page<ItemDto> getItems(String search, Sorting sort, int pageNumber, int pageSize);
 
   /**
    * Изменение состава корзины товаров.

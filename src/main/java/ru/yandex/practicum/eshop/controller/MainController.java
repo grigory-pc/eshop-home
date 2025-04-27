@@ -16,7 +16,7 @@ import ru.yandex.practicum.eshop.dto.ItemDto;
 import ru.yandex.practicum.eshop.dto.OrderDto;
 import ru.yandex.practicum.eshop.dto.PagingDto;
 import ru.yandex.practicum.eshop.enums.Action;
-import ru.yandex.practicum.eshop.enums.Sort;
+import ru.yandex.practicum.eshop.enums.Sorting;
 import ru.yandex.practicum.eshop.service.ItemService;
 
 /**
@@ -54,24 +54,24 @@ public class MainController {
    */
   @GetMapping("/main/items")
   public String getItems(@RequestParam(defaultValue = "") String search,
-                         @RequestParam(defaultValue = "NO") Sort sort,
+                         @RequestParam(defaultValue = "NO") Sorting sort,
                          @RequestParam(defaultValue = "10") int pageSize,
-                         @RequestParam(defaultValue = "1") int pageNumber,
+                         @RequestParam(defaultValue = "0") int pageNumber,
                          Model model) {
 
     log.info(
         "Получен запрос на получение списка товаров для главной страницы. pageNumber={} pageSize={}",
         pageNumber, pageSize);
 
-    Page<ItemDto> posts = itemService.getItems(search, sort, pageNumber, pageSize);
+    Page<ItemDto> items = itemService.getItems(search, sort, pageNumber, pageSize);
 
-    model.addAttribute("posts", posts.getContent());
+    model.addAttribute("items", items.getContent());
     model.addAttribute("search", search);
     model.addAttribute("paging", new PagingDto(
-        pageNumber,
+        pageNumber + 1,
         pageSize,
-        posts.hasPrevious(),
-        posts.hasNext()
+        items.hasPrevious(),
+        items.hasNext()
     ));
 
     return "main";
