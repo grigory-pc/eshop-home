@@ -80,19 +80,19 @@ public class MainController {
   /**
    * Изменение количества товаров в корзине на главной странице.
    *
-   * @param id - id товара.
+   * @param itemId - id товара.
    * @param action - действие с товаром в корзине.
    * @return перенаправляет на главную страницу.
    */
   @PostMapping("/main/items/{id}")
-  public String updateMainCartItems(@PathVariable(name = "id") Long id,
+  public String updateMainCartItems(@PathVariable(name = "id") Long itemId,
                                     @RequestParam(defaultValue = "") Action action) {
 
-    log.info("Получен запрос на изменение корзины: {} для товара id = {}", action, id);
+    log.info("Получен запрос на изменение корзины: {} для товара id = {}", action, itemId);
 
-    itemService.editCart(id, action);
+    itemService.editCart(itemId, action);
 
-    log.info(LOG_CART_UPDATED, id);
+    log.info(LOG_CART_UPDATED, itemId);
 
     return REDIRECT_MAIN;
   }

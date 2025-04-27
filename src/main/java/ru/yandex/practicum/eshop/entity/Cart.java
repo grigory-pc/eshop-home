@@ -34,7 +34,6 @@ public class Cart {
   private Long id;
   @Column(name = "total", nullable = false)
   private double total;
-  //  @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
   @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
   @JoinTable(name = "cart_item",
              joinColumns = @JoinColumn(name = "cart_id"),

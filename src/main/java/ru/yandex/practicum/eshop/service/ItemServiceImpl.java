@@ -10,18 +10,26 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.eshop.dto.CartDto;
 import ru.yandex.practicum.eshop.dto.ItemDto;
 import ru.yandex.practicum.eshop.dto.OrderDto;
+import ru.yandex.practicum.eshop.entity.Cart;
+import ru.yandex.practicum.eshop.entity.CartItem;
 import ru.yandex.practicum.eshop.entity.Item;
 import ru.yandex.practicum.eshop.enums.Action;
 import ru.yandex.practicum.eshop.enums.Sorting;
 import ru.yandex.practicum.eshop.exceptions.SortingException;
 import ru.yandex.practicum.eshop.mappers.ItemMapper;
+import ru.yandex.practicum.eshop.repository.CartItemRepository;
+import ru.yandex.practicum.eshop.repository.CartRepository;
 import ru.yandex.practicum.eshop.repository.ItemRepository;
 
 @Service
 @RequiredArgsConstructor
 public class ItemServiceImpl implements ItemService {
-  private final ItemRepository repository;
+  private static final Long CART_ID = 1L;
+  private static final Long ORDER_ID = 1L;
+  private final ItemRepository itemRepository;
   private final ItemMapper itemMapper;
+  private final CartRepository cartRepository;
+  private final CartItemRepository cartItemRepository;
 
   @Override
   public Page<ItemDto> getItems(String search, Sorting sort, int pageNumber, int pageSize) {
@@ -38,17 +46,56 @@ public class ItemServiceImpl implements ItemService {
     }
 
     if (search.isEmpty()) {
-      items = repository.findAll(pageableItems);
+      items = itemRepository.findAll(pageableItems);
     } else {
-      items = repository.findByTitleContainingIgnoreCase(search, pageableItems);
+      items = itemRepository.findByTitleContainingIgnoreCase(search, pageableItems);
     }
 
     return itemMapper.toDtoPage(items);
   }
 
   @Override
-  public void editCart(Long id, Action action) {
+  public void editCart(Long itemId, Action action) {
+    Cart existingCart = cartRepository.getReferenceById(CART_ID);
+    Item existingItem = itemRepository.getReferenceById(itemId);
+    CartItem existingCartItem = cartItemRepository.findCartItemByCartAndItem(existingCart,
+                                                                             existingItem);
+    switch (action) {
+      case PLUS -> {
+        if (existingCartItem != null) {
+          existingCartItem.setCount(existingCartItem.getCount() + 1);
+          cartItemRepository.save(existingCartItem);
+        } else {
+          CartItem newItem = new CartItem();
+          newItem.setCart(existingCart);
+          newItem.setItem(existingItem);
+          newItem.setCount(1);
 
+          cartItemRepository.save(newItem);
+        }
+      }
+      case MINUS -> {
+        if (existingCartItem != null) {
+          if (existingCartItem.getCount() > 1) {
+            existingCartItem.setCount(existingCartItem.getCount() - 1);
+            cartItemRepository.save(existingCartItem);
+          } else {
+            cartItemRepository.delete(existingCartItem);
+          }
+        }
+      }
+      case DELETE -> cartItemRepository.delete(existingCartItem);
+    }
+    double total = cartItemRepository.findCartItemsByCart(existingCart)
+                                     .stream()
+                                     .mapToDouble(item -> {
+                                       Item product = item.getItem();
+                                       return product.getPrice() * item.getCount();
+                                     })
+                                     .sum();
+
+    existingCart.setTotal(total);
+    cartRepository.save(existingCart);
   }
 
   @Override

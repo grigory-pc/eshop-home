@@ -26,10 +26,10 @@ public interface ItemService {
   /**
    * Изменение состава корзины товаров.
    *
-   * @param id - id товара.
+   * @param itemId - id товара.
    * @param action - действие с товаром в корзине.
    */
-  void editCart(Long id, Action action);
+  void editCart(Long itemId, Action action);
 
   /**
    * Получение всех товаров корзины.
