@@ -10,7 +10,7 @@ import ru.yandex.practicum.eshop.entity.Item;
  */
 public interface ItemRepository extends JpaRepository<Item, Long> {
   /**
-   * Поиск товаров на базе тега.
+   * Поиск товаров на базе строки поиска.
    *
    * @param search          - строка для поиска товаров с буквами, с которых начинается название
    *                        товаров.
@@ -18,5 +18,5 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
    *                        сортировки.
    * @return коллекция товаров с параметрами пагинации.
    */
-  Page<Item> findByTitleStartingWith(String search, Pageable pageableRequest);
+  Page<Item> findByTitleContainingIgnoreCase(String search, Pageable pageableRequest);
 }

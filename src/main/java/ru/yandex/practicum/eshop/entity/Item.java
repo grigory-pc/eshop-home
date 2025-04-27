@@ -30,7 +30,7 @@ public class Item {
   @Column(name = "title", nullable = false)
   private String title;
   @Column(name = "image_path", nullable = false)
-  private String imagePath;
+  private String imgPath;
   @Column(name = "description", nullable = false)
   private String description;
   @Column(name = "price", nullable = false)

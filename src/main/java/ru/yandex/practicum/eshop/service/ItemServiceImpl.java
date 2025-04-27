@@ -40,7 +40,7 @@ public class ItemServiceImpl implements ItemService {
     if (search.isEmpty()) {
       items = repository.findAll(pageableItems);
     } else {
-      items = repository.findByTitleStartingWith(search, pageableItems);
+      items = repository.findByTitleContainingIgnoreCase(search, pageableItems);
     }
 
     return itemMapper.toDtoPage(items);
