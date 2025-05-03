@@ -13,11 +13,9 @@ import ru.yandex.practicum.eshop.entity.Item;
  */
 @Mapper(componentModel = "spring")
 public interface ItemMapper {
-  Item toItem(ItemDto dto);
+  ItemDto toPreviewDto(Item item);
 
-  ItemDto toPreviewDto(Item post);
-
-  ItemDto toDto(Item post);
+  List<ItemDto> toDto(Iterable<Item> items);
 
   default Page<ItemDto> toDtoPage(Page<Item> items) {
     List<ItemDto> dtos = items.stream()

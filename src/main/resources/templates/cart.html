@@ -29,7 +29,9 @@
                         <b th:text="${item.getPrice()}+' руб.'"></b>
                     </td>
                 </tr>
-                <tr><td th:text="${item.getDescription()}"></td></tr>
+                <tr>
+                    <td th:text="${item.getDescription()}"></td>
+                </tr>
                 <tr>
                     <td>
                         <form th:action="${'/cart/items/'+item.getId()}" method="post">
@@ -50,8 +52,8 @@
     </tr>
     <tr>
         <td style="text-align:right">
-            <form action="/buy" method="post" th:if="${!empty}">
-            <button>Купить</button>
+            <form action="/buy" method="post" th:if="${items != null and items.size() > 0}">
+                <button>Купить</button>
             </form>
         </td>
     </tr>

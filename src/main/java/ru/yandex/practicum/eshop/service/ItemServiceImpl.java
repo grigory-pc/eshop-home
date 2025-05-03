@@ -3,6 +3,7 @@ package ru.yandex.practicum.eshop.service;
 import ch.qos.logback.core.joran.spi.ActionException;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -114,7 +115,22 @@ public class ItemServiceImpl implements ItemService {
 
   @Override
   public CartDto getCartItems() {
-    return null;
+    List<Item> items = cartItemRepository.findCartItemsByCartId(CART_ID)
+                                         .stream()
+                                         .map(CartItem::getItemId)
+                                         .collect(Collectors.collectingAndThen(
+                                             Collectors.toList(),
+                                             itemRepository::findAllById
+                                         ));
+
+    double total = items.stream()
+                        .mapToDouble(item -> item.getPrice() * item.getCount())
+                        .sum();
+    return CartDto.builder()
+                  .id(CART_ID)
+                  .items(itemMapper.toDto(items))
+                  .total(total)
+                  .build();
   }
 
   @Override
