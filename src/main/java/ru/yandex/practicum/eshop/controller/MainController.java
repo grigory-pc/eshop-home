@@ -1,5 +1,6 @@
 package ru.yandex.practicum.eshop.controller;
 
+import ch.qos.logback.core.joran.spi.ActionException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +16,6 @@ import ru.yandex.practicum.eshop.dto.CartDto;
 import ru.yandex.practicum.eshop.dto.ItemDto;
 import ru.yandex.practicum.eshop.dto.OrderDto;
 import ru.yandex.practicum.eshop.dto.PagingDto;
-import ru.yandex.practicum.eshop.enums.Action;
 import ru.yandex.practicum.eshop.enums.Sorting;
 import ru.yandex.practicum.eshop.service.ItemService;
 
@@ -86,7 +86,8 @@ public class MainController {
    */
   @PostMapping("/main/items/{id}")
   public String updateMainCartItems(@PathVariable(name = "id") Long itemId,
-                                    @RequestParam(defaultValue = "") Action action) {
+                                    @RequestParam(defaultValue = "") String action)
+      throws ActionException {
 
     log.info("Получен запрос на изменение корзины: {} для товара id = {}", action, itemId);
 
@@ -129,7 +130,8 @@ public class MainController {
    */
   @PostMapping("/cart/items/{id}")
   public String updateCartItems(@PathVariable(name = "id") Long id,
-                                @RequestParam(defaultValue = "") Action action) {
+                                @RequestParam(defaultValue = "") String action)
+      throws ActionException {
 
     log.info("Получен запрос на изменение корзины: {} для товара id = {}", action, id);
 
@@ -167,7 +169,7 @@ public class MainController {
    */
   @PostMapping("/items/{id}")
   public String updateItems(@PathVariable(name = "id") Long id,
-                            @RequestParam(defaultValue = "") Action action) {
+                            @RequestParam(defaultValue = "") String action) throws ActionException {
     log.info("Получен запрос из карточки товара на изменение корзины: {} для товара id = {}",
              action, id);
 

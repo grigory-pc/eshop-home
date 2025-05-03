@@ -1,11 +1,11 @@
 package ru.yandex.practicum.eshop.service;
 
+import ch.qos.logback.core.joran.spi.ActionException;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import ru.yandex.practicum.eshop.dto.CartDto;
 import ru.yandex.practicum.eshop.dto.ItemDto;
 import ru.yandex.practicum.eshop.dto.OrderDto;
-import ru.yandex.practicum.eshop.enums.Action;
 import ru.yandex.practicum.eshop.enums.Sorting;
 
 /**
@@ -28,8 +28,10 @@ public interface ItemService {
    *
    * @param itemId - id товара.
    * @param action - действие с товаром в корзине.
+   *
+   * @throws ActionException - исключение в случае некорректного значения в запросе для action.
    */
-  void editCart(Long itemId, Action action);
+  void editCart(Long itemId, String action) throws ActionException;
 
   /**
    * Получение всех товаров корзины.

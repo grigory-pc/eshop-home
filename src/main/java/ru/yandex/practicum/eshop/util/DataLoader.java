@@ -33,7 +33,7 @@ public class DataLoader implements CommandLineRunner {
                       .imgPath(ITEM_SHORTS_IMG_PATH)
                       .description("Летние шорты карго")
                       .price(1399.99)
-                      .count(11)
+                      .count(0)
                       .build();
 
     Item sunglasses = Item.builder()
@@ -41,7 +41,7 @@ public class DataLoader implements CommandLineRunner {
                           .imgPath(ITEM_SUNGLASSES_IMG_PATH)
                           .description("Солцезащитные очки с UV и поляризацией")
                           .price(3410.00)
-                          .count(6)
+                          .count(0)
                           .build();
 
     Item tShirt = Item.builder()
@@ -49,7 +49,7 @@ public class DataLoader implements CommandLineRunner {
                       .imgPath(ITEM_TSHIRT_IMG_PATH)
                       .description("Футболка с рукавом")
                       .price(567.99)
-                      .count(1)
+                      .count(0)
                       .build();
 
     itemRepository.saveAll(List.of(shorts, sunglasses, tShirt));

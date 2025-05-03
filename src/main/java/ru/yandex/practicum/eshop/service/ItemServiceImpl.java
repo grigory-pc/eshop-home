@@ -1,6 +1,8 @@
 package ru.yandex.practicum.eshop.service;
 
+import ch.qos.logback.core.joran.spi.ActionException;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -55,42 +57,54 @@ public class ItemServiceImpl implements ItemService {
   }
 
   @Override
-  public void editCart(Long itemId, Action action) {
+  public void editCart(Long itemId, String actionRequest) throws ActionException {
+    Action action = Action.getValueOf(actionRequest);
+
     Cart existingCart = cartRepository.getReferenceById(CART_ID);
-    Item existingItem = itemRepository.getReferenceById(itemId);
-    CartItem existingCartItem = cartItemRepository.findCartItemByCartAndItem(existingCart,
-                                                                             existingItem);
+    Optional<CartItem> existingCartItem = cartItemRepository.findCartItemByCartIdAndItemId(CART_ID,
+                                                                                           itemId);
+
     switch (action) {
       case PLUS -> {
-        if (existingCartItem != null) {
-          existingCartItem.setCount(existingCartItem.getCount() + 1);
-          cartItemRepository.save(existingCartItem);
+        if (existingCartItem.isPresent()) {
+          CartItem cartItem = existingCartItem.get();
+
+          cartItem.setCount(cartItem.getCount() + 1);
+          cartItemRepository.save(cartItem);
         } else {
           CartItem newItem = new CartItem();
-          newItem.setCart(existingCart);
-          newItem.setItem(existingItem);
+          newItem.setCartId(CART_ID);
+          newItem.setItemId(itemId);
           newItem.setCount(1);
 
           cartItemRepository.save(newItem);
         }
+        itemRepository.incrementCount(itemId);
       }
       case MINUS -> {
-        if (existingCartItem != null) {
-          if (existingCartItem.getCount() > 1) {
-            existingCartItem.setCount(existingCartItem.getCount() - 1);
-            cartItemRepository.save(existingCartItem);
+        if (existingCartItem.isPresent()) {
+          CartItem cartItem = existingCartItem.get();
+
+          if (cartItem.getCount() >= 1) {
+            cartItem.setCount(cartItem.getCount() - 1);
+            cartItemRepository.save(cartItem);
+
+            itemRepository.decrementCount(itemId);
           } else {
-            cartItemRepository.delete(existingCartItem);
+            cartItemRepository.delete(cartItem);
           }
         }
       }
-      case DELETE -> cartItemRepository.delete(existingCartItem);
+      case DELETE -> existingCartItem.ifPresent(cartItemRepository::delete);
+
     }
-    double total = cartItemRepository.findCartItemsByCart(existingCart)
+
+    double total = cartItemRepository.findCartItemsByCartId(CART_ID)
                                      .stream()
-                                     .mapToDouble(item -> {
-                                       Item product = item.getItem();
-                                       return product.getPrice() * item.getCount();
+                                     .mapToDouble(cartItem -> {
+                                       Item product = itemRepository.getReferenceById(
+                                           cartItem.getItemId());
+                                       return product.getPrice() * cartItem.getCount();
                                      })
                                      .sum();
 

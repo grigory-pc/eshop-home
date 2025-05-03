@@ -13,9 +13,10 @@ CREATE TABLE IF NOT EXISTS carts(
 );
 
 CREATE TABLE IF NOT EXISTS cart_item(
-    cart_id bigint,
-    item_id bigint,
-    count   int
+     PRIMARY KEY (cart_id, item_id),
+     cart_id bigint,
+     item_id bigint,
+     count   int
 );
 
 CREATE TABLE IF NOT EXISTS orders(
@@ -24,10 +25,12 @@ CREATE TABLE IF NOT EXISTS orders(
 );
 
 CREATE TABLE IF NOT EXISTS order_item(
+    PRIMARY KEY (order_id, item_id),
     order_id bigint,
-    item_id  bigint,
-    count    int
+    item_id bigint,
+    count   int
 );
+
 
 ALTER TABLE cart_item ADD FOREIGN KEY (cart_id) REFERENCES carts (id) ON DELETE CASCADE;
 ALTER TABLE cart_item ADD FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE CASCADE;

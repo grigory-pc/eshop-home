@@ -2,11 +2,8 @@ package ru.yandex.practicum.eshop.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,17 +20,14 @@ import lombok.Setter;
 @Builder
 @AllArgsConstructor
 @RequiredArgsConstructor
-@Table(name = "order_item ")
+@IdClass(OrderItemKey.class)
+@Table(name = "order_item")
 public class OrderItem {
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = "id")
-  private Long id;
-  @ManyToOne
-  @JoinColumn(name = "order_id")
-  private Order order;
-  @ManyToOne
-  @JoinColumn(name = "item_id")
-  private Item item;
+  @Column(name = "order_id", nullable = false)
+  private Long orderId;
+  @Id
+  @Column(name = "item_id", nullable = false)
+  private Long itemId;
   private int count;
 }
