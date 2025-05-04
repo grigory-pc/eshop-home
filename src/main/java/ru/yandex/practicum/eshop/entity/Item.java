@@ -34,7 +34,7 @@ public class Item {
   @Column(name = "description", nullable = false)
   private String description;
   @Column(name = "price", nullable = false)
-  private double price;
+  private Double price;
   @Column(name = "count", nullable = false)
-  private int count;
+  private Integer count;
 }

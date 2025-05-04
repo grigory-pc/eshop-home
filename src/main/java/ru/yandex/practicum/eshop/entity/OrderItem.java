@@ -29,5 +29,5 @@ public class OrderItem {
   @Id
   @Column(name = "item_id", nullable = false)
   private Long itemId;
-  private int count;
+  private Integer count;
 }

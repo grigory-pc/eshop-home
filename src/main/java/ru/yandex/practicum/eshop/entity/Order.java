@@ -33,8 +33,7 @@ public class Order {
   @Column(name = "id", nullable = false)
   private Long id;
   @Column(name = "total_sum", nullable = false)
-  private double totalSum;
-  //  @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+  private Double totalSum;
   @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
   @JoinTable(name = "order_item",
              joinColumns = @JoinColumn(name = "order_id"),

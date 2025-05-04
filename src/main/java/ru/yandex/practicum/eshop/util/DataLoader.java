@@ -20,7 +20,7 @@ public class DataLoader implements CommandLineRunner {
   private static final String ITEM_SUNGLASSES_IMG_PATH = "/images/sunglasses.jpg";
   private static final String ITEM_TSHIRT_IMG_PATH = "/images/tshirt.jpg";
   private static final Long CART_ID = 1L;
-  private static final Double CART_TOTAL_INIT = 0.00;
+  private static final Double TOTAL_INIT = 0.00;
 
   private final ItemRepository itemRepository;
   private final CartRepository cartRepository;
@@ -53,6 +53,6 @@ public class DataLoader implements CommandLineRunner {
                       .build();
 
     itemRepository.saveAll(List.of(shorts, sunglasses, tShirt));
-    cartRepository.save(new Cart(CART_ID, CART_TOTAL_INIT, new ArrayList<>()));
+    cartRepository.save(new Cart(CART_ID, TOTAL_INIT, new ArrayList<>()));
   }
 }

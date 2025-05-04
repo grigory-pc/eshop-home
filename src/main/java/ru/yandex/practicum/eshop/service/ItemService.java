@@ -51,10 +51,9 @@ public interface ItemService {
   /**
    * Формирование заказа для товаров в корзине.
    *
-   * @param id - id корзины.
    * @return id заказа.
    */
-  Long buyItems(Long id);
+  Long buyItems();
 
   /**
    * Получение всех заказов.
@@ -69,5 +68,5 @@ public interface ItemService {
    * @param id - id заказа.
    * @return объекта заказа.
    */
-  OrderDto getOrder(Long id);
+  OrderDto getOrderItems(Long id);
 }

@@ -33,7 +33,7 @@ public class Cart {
   @Column(name = "id", nullable = false)
   private Long id;
   @Column(name = "total", nullable = false)
-  private double total;
+  private Double total;
   @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
   @JoinTable(name = "cart_item",
              joinColumns = @JoinColumn(name = "cart_id"),

@@ -1,7 +1,9 @@
 package ru.yandex.practicum.eshop.service;
 
 import ch.qos.logback.core.joran.spi.ActionException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,8 @@ import ru.yandex.practicum.eshop.dto.OrderDto;
 import ru.yandex.practicum.eshop.entity.Cart;
 import ru.yandex.practicum.eshop.entity.CartItem;
 import ru.yandex.practicum.eshop.entity.Item;
+import ru.yandex.practicum.eshop.entity.Order;
+import ru.yandex.practicum.eshop.entity.OrderItem;
 import ru.yandex.practicum.eshop.enums.Action;
 import ru.yandex.practicum.eshop.enums.Sorting;
 import ru.yandex.practicum.eshop.exceptions.SortingException;
@@ -23,16 +27,20 @@ import ru.yandex.practicum.eshop.mappers.ItemMapper;
 import ru.yandex.practicum.eshop.repository.CartItemRepository;
 import ru.yandex.practicum.eshop.repository.CartRepository;
 import ru.yandex.practicum.eshop.repository.ItemRepository;
+import ru.yandex.practicum.eshop.repository.OrderItemRepository;
+import ru.yandex.practicum.eshop.repository.OrderRepository;
 
 @Service
 @RequiredArgsConstructor
 public class ItemServiceImpl implements ItemService {
   private static final Long CART_ID = 1L;
-  private static final Long ORDER_ID = 1L;
+  private static final Double TOTAL_INIT = 0.00;
   private final ItemRepository itemRepository;
   private final ItemMapper itemMapper;
   private final CartRepository cartRepository;
+  private final OrderRepository orderRepository;
   private final CartItemRepository cartItemRepository;
+  private final OrderItemRepository orderItemRepository;
 
   @Override
   public Page<ItemDto> getItems(String search, Sorting sort, int pageNumber, int pageSize) {
@@ -126,30 +134,87 @@ public class ItemServiceImpl implements ItemService {
     double total = items.stream()
                         .mapToDouble(item -> item.getPrice() * item.getCount())
                         .sum();
+
     return CartDto.builder()
                   .id(CART_ID)
-                  .items(itemMapper.toDto(items))
+                  .items(itemMapper.toListDto(items))
                   .total(total)
                   .build();
   }
 
   @Override
   public ItemDto getItem(Long id) {
-    return null;
+    return itemMapper.toDto(itemRepository.getReferenceById(id));
   }
 
   @Override
-  public Long buyItems(Long id) {
-    return null;
+  public Long buyItems() {
+    Cart cart = cartRepository.getReferenceById(CART_ID);
+    List<Item> items = new ArrayList<>(cart.getItems());
+
+    Order order = new Order();
+    order.setTotalSum(cart.getTotal());
+    order.setItems(items);
+
+    Order savedOrder = orderRepository.save(order);
+
+    List<OrderItem> orderItems = items.stream()
+                                      .map(item -> {
+                                        int count = item.getCount() != null ? item.getCount() : 0;
+                                        return new OrderItem(savedOrder.getId(), item.getId(),
+                                                             count);
+                                      })
+                                      .toList();
+
+    orderItemRepository.saveAll(orderItems);
+
+    flushCart();
+
+    return savedOrder.getId();
   }
 
   @Override
   public List<OrderDto> getOrders() {
-    return null;
+    List<Order> orders = orderRepository.findAll();
+
+    return orders.stream()
+                 .map(order -> getOrderItems(order.getId()))
+                 .toList();
   }
 
   @Override
-  public OrderDto getOrder(Long id) {
-    return null;
+  public OrderDto getOrderItems(Long id) {
+    Map<Long, Integer> orderItemCounts = orderItemRepository.findOrderItemsByOrderId(id)
+                                                            .stream()
+                                                            .collect(Collectors.toMap(
+                                                                OrderItem::getItemId,
+                                                                OrderItem::getCount
+                                                            ));
+
+    List<Item> items = itemRepository.findAllById(orderItemCounts.keySet())
+                                     .stream()
+                                     .peek(item -> {
+                                       Integer countFromOrder = orderItemCounts.get(item.getId());
+                                       if (countFromOrder != null) {
+                                         item.setCount(countFromOrder);
+                                       }
+                                     })
+                                     .toList();
+
+    double total = items.stream()
+                        .mapToDouble(item -> item.getPrice() * item.getCount())
+                        .sum();
+
+    return OrderDto.builder()
+                   .id(id)
+                   .items(itemMapper.toListDto(items))
+                   .totalSum(total)
+                   .build();
+  }
+
+  private void flushCart() {
+    Cart cart = new Cart(CART_ID, TOTAL_INIT, new ArrayList<>());
+
+    cartRepository.save(cart);
   }
 }
