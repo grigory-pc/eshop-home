@@ -113,13 +113,13 @@ public class MainController {
     log.info("Получен запрос на получение списка товаров в корзине");
 
     CartDto cartDto = itemService.getCartItems();
-    log.info("Получен список товаров в корзине размером: {}", cartDto.getItems().size());
+    log.info("Получен список товаров в корзине размером: {}", cartDto.items().size());
 
-    if (cartDto.getItems().isEmpty()) {
+    if (cartDto.items().isEmpty()) {
       model.addAttribute("empty", ("true"));
     } else {
-      model.addAttribute("items", cartDto.getItems());
-      model.addAttribute("total", cartDto.getTotal());
+      model.addAttribute("items", cartDto.items());
+      model.addAttribute("total", cartDto.total());
     }
 
     return "cart";

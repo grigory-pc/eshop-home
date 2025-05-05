@@ -1,20 +1,14 @@
 package ru.yandex.practicum.eshop.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
 
 /**
  * DTO корзины с товарами.
  */
-@Data
 @Builder
-@RequiredArgsConstructor
-@AllArgsConstructor
-public class CartDto {
-  private Long id;
-  private List<ItemDto> items;
-  private double total;
+public record CartDto(@JsonProperty(value = "id", required = true) Long id,
+                      @JsonProperty(value = "items", required = true) List<ItemDto> items,
+                      @JsonProperty(value = "totalSum", required = true) Double total) {
 }
