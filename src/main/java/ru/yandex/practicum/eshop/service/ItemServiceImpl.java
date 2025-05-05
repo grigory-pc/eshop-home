@@ -35,6 +35,7 @@ import ru.yandex.practicum.eshop.repository.OrderRepository;
 public class ItemServiceImpl implements ItemService {
   private static final Long CART_ID = 1L;
   private static final Double TOTAL_INIT = 0.00;
+  private static final Integer COUNT_INIT = 0;
   private final ItemRepository itemRepository;
   private final ItemMapper itemMapper;
   private final CartRepository cartRepository;
@@ -152,6 +153,7 @@ public class ItemServiceImpl implements ItemService {
     Cart cart = cartRepository.getReferenceById(CART_ID);
     List<Item> items = new ArrayList<>(cart.getItems());
 
+
     Order order = new Order();
     order.setTotalSum(cart.getTotal());
     order.setItems(items);
@@ -168,7 +170,8 @@ public class ItemServiceImpl implements ItemService {
 
     orderItemRepository.saveAll(orderItems);
 
-    flushCart();
+
+    flushItemAndCart(cart.getId());
 
     return savedOrder.getId();
   }
@@ -212,9 +215,12 @@ public class ItemServiceImpl implements ItemService {
                    .build();
   }
 
-  private void flushCart() {
-    Cart cart = new Cart(CART_ID, TOTAL_INIT, new ArrayList<>());
-
+  private void flushItemAndCart(Long cartId) {
+    Cart cart = new Cart(cartId, TOTAL_INIT, new ArrayList<>());
     cartRepository.save(cart);
+
+    cartItemRepository.deleteAllByCartId(cartId);
+
+    itemRepository.updateAllCountToZero();
   }
 }

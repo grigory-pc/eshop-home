@@ -43,4 +43,9 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
   @Modifying
   @Query("UPDATE Item i SET i.count = i.count - 1 WHERE i.id = :id")
   void decrementCount(@Param("id") Long id);
+
+  @Transactional
+  @Modifying
+  @Query("UPDATE Item i SET i.count = 0")
+  void updateAllCountToZero();
 }
