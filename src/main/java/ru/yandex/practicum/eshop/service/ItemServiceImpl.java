@@ -45,8 +45,8 @@ import static ru.yandex.practicum.eshop.enums.MessagesLog.MESSAGE_LOG_ITEMS_SIZE
 public class ItemServiceImpl implements ItemService {
   private static final Long CART_ID = 1L;
   private static final Double TOTAL_INIT = 0.00;
-  private final ItemRepository itemRepository;
   private final ItemMapper itemMapper;
+  private final ItemRepository itemRepository;
   private final CartRepository cartRepository;
   private final OrderRepository orderRepository;
   private final CartItemRepository cartItemRepository;
