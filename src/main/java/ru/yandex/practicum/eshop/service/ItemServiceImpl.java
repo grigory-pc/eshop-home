@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +23,7 @@ import ru.yandex.practicum.eshop.entity.Order;
 import ru.yandex.practicum.eshop.entity.OrderItem;
 import ru.yandex.practicum.eshop.enums.Action;
 import ru.yandex.practicum.eshop.enums.Sorting;
+import ru.yandex.practicum.eshop.exceptions.DataBaseRequestException;
 import ru.yandex.practicum.eshop.exceptions.SortingException;
 import ru.yandex.practicum.eshop.mappers.ItemMapper;
 import ru.yandex.practicum.eshop.repository.CartItemRepository;
@@ -30,6 +32,14 @@ import ru.yandex.practicum.eshop.repository.ItemRepository;
 import ru.yandex.practicum.eshop.repository.OrderItemRepository;
 import ru.yandex.practicum.eshop.repository.OrderRepository;
 
+import static ru.yandex.practicum.eshop.enums.MessagesLog.MESSAGE_LOG_DB_GET_REQUEST;
+import static ru.yandex.practicum.eshop.enums.MessagesLog.MESSAGE_LOG_DB_RESPONSE_ERROR;
+import static ru.yandex.practicum.eshop.enums.MessagesLog.MESSAGE_LOG_DB_SAVE_REQUEST;
+import static ru.yandex.practicum.eshop.enums.MessagesLog.MESSAGE_LOG_FLUSH_CART;
+import static ru.yandex.practicum.eshop.enums.MessagesLog.MESSAGE_LOG_FLUSH_CART_SUCCESS;
+import static ru.yandex.practicum.eshop.enums.MessagesLog.MESSAGE_LOG_ITEMS_SIZE;
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ItemServiceImpl implements ItemService {
@@ -45,15 +55,19 @@ public class ItemServiceImpl implements ItemService {
   @Override
   public Page<ItemDto> getItems(String search, Sorting sort, int pageNumber, int pageSize) {
     Page<Item> items;
-
     Pageable pageableItems = getPageableItemsRequest(sort, pageNumber, pageSize);
 
-    if (search.isEmpty()) {
-      items = itemRepository.findAll(pageableItems);
-    } else {
-      items = itemRepository.findByTitleContainingIgnoreCase(search, pageableItems);
+    try {
+      log.info(MESSAGE_LOG_DB_GET_REQUEST.getMessage());
+      if (search.isEmpty()) {
+        items = itemRepository.findAll(pageableItems);
+      } else {
+        items = itemRepository.findByTitleContainingIgnoreCase(search, pageableItems);
+      }
+      log.info(MESSAGE_LOG_ITEMS_SIZE.getMessage(), items.getSize());
+    } catch (Exception e) {
+      throw new DataBaseRequestException(MESSAGE_LOG_DB_RESPONSE_ERROR.getMessage(), e);
     }
-
     return itemMapper.toDtoPage(items);
   }
 
@@ -61,23 +75,38 @@ public class ItemServiceImpl implements ItemService {
   public void editCart(Long itemId, String actionRequest) throws ActionException {
     Action action = Action.getValueOf(actionRequest);
 
-    Cart existingCart = cartRepository.getReferenceById(CART_ID);
-    Optional<CartItem> existingCartItem = cartItemRepository.findCartItemByCartIdAndItemId(CART_ID,
-                                                                                           itemId);
+    try {
+      Cart existingCart = cartRepository.getReferenceById(CART_ID);
+      Optional<CartItem> existingCartItem = cartItemRepository.findCartItemByCartIdAndItemId(
+          CART_ID,
+          itemId);
 
-    switch (action) {
-      case PLUS -> incrementItem(itemId, existingCartItem);
-      case MINUS -> decrementItem(itemId, existingCartItem);
-      case DELETE -> existingCartItem.ifPresent(cartItemRepository::delete);
+      switch (action) {
+        case PLUS -> incrementItem(itemId, existingCartItem);
+        case MINUS -> decrementItem(itemId, existingCartItem);
+        case DELETE -> existingCartItem.ifPresent(cartItemRepository::delete);
+      }
+
+      existingCart.setTotal(calculateTotal());
+      cartRepository.save(existingCart);
+    } catch (Exception e) {
+      throw new DataBaseRequestException(MESSAGE_LOG_DB_RESPONSE_ERROR.getMessage(), e);
+
     }
-
-    existingCart.setTotal(calculateTotal());
-    cartRepository.save(existingCart);
   }
 
   @Override
   public CartDto getCartItems() {
-    List<Item> items = getItemsFromCart();
+    List<Item> items;
+
+    log.info(MESSAGE_LOG_DB_GET_REQUEST.getMessage());
+    try {
+      items = getItemsFromCart();
+
+      log.info(MESSAGE_LOG_ITEMS_SIZE.getMessage(), items.size());
+    } catch (Exception e) {
+      throw new DataBaseRequestException(MESSAGE_LOG_DB_RESPONSE_ERROR.getMessage(), e);
+    }
 
     double total = items.stream()
                         .mapToDouble(item -> item.getPrice() * item.getCount())
@@ -92,26 +121,35 @@ public class ItemServiceImpl implements ItemService {
 
   @Override
   public ItemDto getItem(Long id) {
+    log.info(MESSAGE_LOG_DB_GET_REQUEST.getMessage());
+
     return itemMapper.toDto(itemRepository.getReferenceById(id));
   }
 
   @Override
   public Long buyItems() {
-    Cart cart = cartRepository.getReferenceById(CART_ID);
-    List<Item> items = new ArrayList<>(cart.getItems());
+    try {
+      Cart cart = cartRepository.getReferenceById(CART_ID);
+      List<Item> items = new ArrayList<>(cart.getItems());
 
-    Order order = Order.builder()
-                       .items(items)
-                       .totalSum(cart.getTotal())
-                       .build();
+      Order order = Order.builder()
+                         .items(items)
+                         .totalSum(cart.getTotal())
+                         .build();
 
-    Order savedOrder = orderRepository.save(order);
 
-    orderItemRepository.saveAll(createAndGetOrderItems(items, savedOrder));
+      log.info(MESSAGE_LOG_DB_SAVE_REQUEST.getMessage());
+      Order savedOrder = orderRepository.save(order);
 
-    flushItemAndCart(cart.getId());
+      orderItemRepository.saveAll(createAndGetOrderItems(items, savedOrder));
 
-    return savedOrder.getId();
+      flushItemAndCart(cart.getId());
+
+      return savedOrder.getId();
+    } catch (Exception e) {
+      throw new DataBaseRequestException(MESSAGE_LOG_DB_RESPONSE_ERROR.getMessage(), e);
+
+    }
   }
 
   @Override
@@ -172,12 +210,16 @@ public class ItemServiceImpl implements ItemService {
   }
 
   private void flushItemAndCart(Long cartId) {
+    log.info(MESSAGE_LOG_FLUSH_CART.getMessage());
+
     Cart cart = new Cart(cartId, TOTAL_INIT, new ArrayList<>());
     cartRepository.save(cart);
 
     cartItemRepository.deleteAllByCartId(cartId);
 
     itemRepository.updateAllCountToZero();
+
+    log.info(MESSAGE_LOG_FLUSH_CART_SUCCESS.getMessage());
   }
 
   private static Pageable getPageableItemsRequest(Sorting sort, int pageNumber, int pageSize) {

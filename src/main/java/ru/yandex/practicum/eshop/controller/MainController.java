@@ -51,9 +51,11 @@ public class MainController {
    *
    * @param pageNumber - номер текущей страницы (по умолчанию, 1)
    * @param pageSize   - максимальное число товаров на странице (по умолчанию, 10)
-   * @param search   - строка с поисков по названию/описанию товара (по умолчанию, пустая строка - все товары)
-   * @param sort   - сортировка перечисление NO, ALPHA, PRICE (по умолчанию, NO - не использовать сортировку).
-   * @param model - модель данных.
+   * @param search     - строка с поисков по названию/описанию товара (по умолчанию, пустая строка -
+   *                   все товары)
+   * @param sort       - сортировка перечисление NO, ALPHA, PRICE (по умолчанию, NO - не
+   *                   использовать сортировку).
+   * @param model      - модель данных.
    * @return главная страница.
    */
   @GetMapping("/main/items")
@@ -64,8 +66,8 @@ public class MainController {
                          Model model) {
 
     log.info(
-        "Получен запрос на получение списка товаров для главной страницы. pageNumber={} pageSize={}",
-        pageNumber, pageSize);
+        "Получен запрос на получение списка товаров для главной страницы. pageNumber={} pageSize={} sort={}",
+        pageNumber, pageSize, sort);
 
     Page<ItemDto> items = itemService.getItems(search, sort, pageNumber, pageSize);
 
@@ -148,7 +150,7 @@ public class MainController {
   /**
    * Обрабатывает GET-запросы на получение карточки товара по id.
    *
-   * @param id - id товара.
+   * @param id    - id товара.
    * @param model - модель данных.
    * @return страница карточки товара.
    */
@@ -167,7 +169,7 @@ public class MainController {
   /**
    * Изменение количества товаров в корзине из карточки товара.
    *
-   * @param id - id товара.
+   * @param id     - id товара.
    * @param action - действие с товаром в корзине.
    * @return перенаправляет на страницу карточки товара.
    */
@@ -222,9 +224,9 @@ public class MainController {
   /**
    * Обрабатывает GET-запросы на получение карточки заказа.
    *
-   * @param id - id заказа.
+   * @param id       - id заказа.
    * @param newOrder - флаг нового заказа.
-   * @param model - модель данных.
+   * @param model    - модель данных.
    * @return страница заказа.
    */
   @GetMapping("/orders/{id}")

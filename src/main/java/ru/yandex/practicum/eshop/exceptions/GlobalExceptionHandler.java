@@ -34,6 +34,14 @@ public class GlobalExceptionHandler {
     return Map.of(ERROR, SORT_EXCEPTION);
   }
 
+  @ExceptionHandler(DataBaseRequestException.class)
+  @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+  public Map<String, String> handleDataBaseRequestException(DataBaseRequestException exception) {
+    log.error(exception.getMessage());
+
+    return Map.of(ERROR, INTERNAL_ERROR);
+  }
+
   @ExceptionHandler(Exception.class)
   @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
   public Map<String, String> handleException(Exception exception) {
