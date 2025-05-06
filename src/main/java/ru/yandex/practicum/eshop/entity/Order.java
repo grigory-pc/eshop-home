@@ -3,6 +3,7 @@ package ru.yandex.practicum.eshop.entity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -34,7 +35,7 @@ public class Order {
   private Long id;
   @Column(name = "total_sum", nullable = false)
   private Double totalSum;
-  @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+  @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
   @JoinTable(name = "order_item",
              joinColumns = @JoinColumn(name = "order_id"),
              inverseJoinColumns = @JoinColumn(name = "item_id"))
