@@ -1,8 +1,12 @@
 package ru.yandex.practicum.eshop.utils;
 
 import lombok.experimental.UtilityClass;
+import ru.yandex.practicum.eshop.dto.CartDto;
 import ru.yandex.practicum.eshop.dto.ItemDto;
+import ru.yandex.practicum.eshop.dto.OrderDto;
 import ru.yandex.practicum.eshop.entity.*;
+
+import java.util.List;
 
 @UtilityClass
 public class Data {
@@ -34,20 +38,33 @@ public class Data {
     }
 
     public Order getOrder() {
-        Item item = getItemPlusCount();
-
         return Order.builder()
                 .id(ORDER_ID)
-                .totalSum(item.getPrice())
+                .totalSum(getItemPlusCount().getPrice())
+                .build();
+    }
+
+    public OrderDto getOrderDto() {
+        return OrderDto.builder()
+                .id(ORDER_ID)
+                .totalSum(getItemPlusCount().getPrice())
+                .items(List.of(getItemDto()))
                 .build();
     }
 
     public Cart getCart() {
-        Item item = getItemPlusCount();
-
         return Cart.builder()
                 .id(CART_ID)
-                .total(item.getPrice())
+                .total(getItemPlusCount().getPrice())
+                .items(List.of(getItemPlusCount()))
+                .build();
+    }
+
+    public CartDto getCartDto() {
+        return CartDto.builder()
+                .id(CART_ID)
+                .total(getItemPlusCount().getPrice())
+                .items(List.of(getItemDto()))
                 .build();
     }
 
