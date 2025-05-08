@@ -23,6 +23,7 @@ dependencies {
     implementation("org.hibernate.orm:hibernate-core")
     implementation("commons-fileupload:commons-fileupload:1.5")
     implementation("commons-io:commons-io:2.16.1")
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
 
     annotationProcessor("org.projectlombok:lombok")
     annotationProcessor("org.mapstruct:mapstruct-processor:1.5.5.Final")

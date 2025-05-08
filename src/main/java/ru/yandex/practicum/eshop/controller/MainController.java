@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.view.RedirectView;
+import reactor.core.publisher.Mono;
 import ru.yandex.practicum.eshop.dto.CartDto;
 import ru.yandex.practicum.eshop.dto.ItemDto;
 import ru.yandex.practicum.eshop.dto.OrderDto;
@@ -59,11 +60,11 @@ public class MainController {
    * @return главная страница.
    */
   @GetMapping("/main/items")
-  public String getItems(@RequestParam(defaultValue = "") String search,
-                         @RequestParam(defaultValue = "NO") Sorting sort,
-                         @RequestParam(defaultValue = "10") int pageSize,
-                         @RequestParam(defaultValue = "0") int pageNumber,
-                         Model model) {
+  public Mono<String> getItems(@RequestParam(defaultValue = "") String search,
+                               @RequestParam(defaultValue = "NO") Sorting sort,
+                               @RequestParam(defaultValue = "10") int pageSize,
+                               @RequestParam(defaultValue = "0") int pageNumber,
+                               Model model) {
 
     log.info(
         "Получен запрос на получение списка товаров для главной страницы. pageNumber={} pageSize={} sort={}",
@@ -80,7 +81,7 @@ public class MainController {
         items.hasNext()
     ));
 
-    return "main";
+    return Mono.just("main");
   }
 
   /**
@@ -91,7 +92,7 @@ public class MainController {
    * @return перенаправляет на главную страницу.
    */
   @PostMapping("/main/items/{id}")
-  public String updateMainCartItems(@PathVariable(name = "id") @NotNull Long itemId,
+  public Mono<String> updateMainCartItems(@PathVariable(name = "id") @NotNull Long itemId,
                                     @RequestParam(defaultValue = "") @NotBlank String action)
       throws ActionException {
 
@@ -101,7 +102,7 @@ public class MainController {
 
     log.info(LOG_CART_UPDATED, itemId);
 
-    return REDIRECT_MAIN;
+    return Mono.just(REDIRECT_MAIN);
   }
 
   /**
@@ -111,7 +112,7 @@ public class MainController {
    * @return главная страница.
    */
   @GetMapping("/cart/items")
-  public String getCartItems(Model model) {
+  public Mono<String> getCartItems(Model model) {
     log.info("Получен запрос на получение списка товаров в корзине");
 
     CartDto cartDto = itemService.getCartItems();
@@ -124,7 +125,7 @@ public class MainController {
       model.addAttribute("total", cartDto.total());
     }
 
-    return "cart";
+    return Mono.just("cart");
   }
 
   /**
@@ -135,7 +136,7 @@ public class MainController {
    * @return перенаправляет на страницу корзины.
    */
   @PostMapping("/cart/items/{id}")
-  public String updateCartItems(@PathVariable(name = "id") @NotNull Long itemId,
+  public Mono<String> updateCartItems(@PathVariable(name = "id") @NotNull Long itemId,
                                 @RequestParam(defaultValue = "") @NotBlank String action)
       throws ActionException {
 
@@ -144,7 +145,7 @@ public class MainController {
     itemService.editCart(itemId, action);
     log.info(LOG_CART_UPDATED, itemId);
 
-    return REDIRECT_CART;
+    return Mono.just(REDIRECT_CART);
   }
 
   /**
@@ -155,7 +156,7 @@ public class MainController {
    * @return страница карточки товара.
    */
   @GetMapping("/items/{id}")
-  public String getItemById(@PathVariable @NotNull Long id, Model model) {
+  public Mono<String> getItemById(@PathVariable @NotNull Long id, Model model) {
     log.info("Получен запрос на получение карточки товара для id = {}", id);
 
     ItemDto itemDto = itemService.getItem(id);
@@ -163,7 +164,7 @@ public class MainController {
 
     model.addAttribute("item", itemDto);
 
-    return "item";
+    return Mono.just("item");
   }
 
   /**
@@ -174,7 +175,7 @@ public class MainController {
    * @return перенаправляет на страницу карточки товара.
    */
   @PostMapping("/items/{id}")
-  public String updateItems(@PathVariable(name = "id") Long id,
+  public Mono<String> updateItems(@PathVariable(name = "id") Long id,
                             @RequestParam(defaultValue = "") String action) throws ActionException {
     log.info("Получен запрос из карточки товара на изменение корзины: {} для товара id = {}",
              action, id);
@@ -182,7 +183,7 @@ public class MainController {
     itemService.editCart(id, action);
     log.info(LOG_CART_UPDATED, id);
 
-    return REDIRECT_ITEMS + id;
+    return Mono.just(REDIRECT_ITEMS + id);
   }
 
   /**
@@ -191,7 +192,7 @@ public class MainController {
    * @return перенаправляет на страницу заказов.
    */
   @PostMapping("/buy")
-  public String buyItems(RedirectAttributes redirectAttributes) {
+  public Mono<String> buyItems(RedirectAttributes redirectAttributes) {
     log.info("Получен запрос на покупку товаров в корзине");
 
     Long orderId = itemService.buyItems();
@@ -200,7 +201,7 @@ public class MainController {
     redirectAttributes.addAttribute("orderId", orderId);
     redirectAttributes.addFlashAttribute("newOrder", true);
 
-    return REDIRECT_ORDERS;
+    return Mono.just(REDIRECT_ORDERS);
   }
 
   /**
@@ -210,7 +211,7 @@ public class MainController {
    * @return страница заказов.
    */
   @GetMapping("/orders")
-  public String getOrders(Model model) {
+  public Mono<String> getOrders(Model model) {
     log.info("Получен запрос на получение списка заказов");
 
     List<OrderDto> orders = itemService.getOrders();
@@ -218,7 +219,7 @@ public class MainController {
 
     model.addAttribute("orders", orders);
 
-    return "orders";
+    return Mono.just("orders");
   }
 
   /**
@@ -230,7 +231,7 @@ public class MainController {
    * @return страница заказа.
    */
   @GetMapping("/orders/{id}")
-  public String getOrderById(@PathVariable @NotNull Long id,
+  public Mono<String> getOrderById(@PathVariable @NotNull Long id,
                              @RequestParam(defaultValue = "false") Boolean newOrder,
                              Model model) {
     log.info("Получен запрос на получение карточки заказа для id = {}", id);
@@ -241,6 +242,6 @@ public class MainController {
     model.addAttribute("order", orderDto);
     model.addAttribute("newOrder", newOrder);
 
-    return "order";
+    return Mono.just("order");
   }
 }
