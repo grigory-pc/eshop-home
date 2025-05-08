@@ -15,7 +15,7 @@ import lombok.RequiredArgsConstructor;
 public class ItemDto {
   private Long id;
   private String title;
-  private String imagePath;
+  private String imgPath;
   private String description;
   private double price;
   private int count;

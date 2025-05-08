@@ -1,12 +1,12 @@
 package ru.yandex.practicum.eshop.service;
 
+import ch.qos.logback.core.joran.spi.ActionException;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import ru.yandex.practicum.eshop.dto.CartDto;
 import ru.yandex.practicum.eshop.dto.ItemDto;
 import ru.yandex.practicum.eshop.dto.OrderDto;
-import ru.yandex.practicum.eshop.enums.Action;
-import ru.yandex.practicum.eshop.enums.Sort;
+import ru.yandex.practicum.eshop.enums.Sorting;
 
 /**
  * Сервис для работы с товарами.
@@ -21,15 +21,17 @@ public interface ItemService {
    * @param pageSize    - количество записей.
    * @return список товаров.
    */
-  Page<ItemDto> getItems(String search, Sort sort, int pageNumber, int pageSize);
+  Page<ItemDto> getItems(String search, Sorting sort, int pageNumber, int pageSize);
 
   /**
    * Изменение состава корзины товаров.
    *
-   * @param id - id товара.
+   * @param itemId - id товара.
    * @param action - действие с товаром в корзине.
+   *
+   * @throws ActionException - исключение в случае некорректного значения в запросе для action.
    */
-  void editCart(Long id, Action action);
+  void editCart(Long itemId, String action) throws ActionException;
 
   /**
    * Получение всех товаров корзины.
@@ -49,10 +51,9 @@ public interface ItemService {
   /**
    * Формирование заказа для товаров в корзине.
    *
-   * @param id - id корзины.
    * @return id заказа.
    */
-  Long buyItems(Long id);
+  Long buyItems();
 
   /**
    * Получение всех заказов.
@@ -67,5 +68,5 @@ public interface ItemService {
    * @param id - id заказа.
    * @return объекта заказа.
    */
-  OrderDto getOrder(Long id);
+  OrderDto getOrderItems(Long id);
 }

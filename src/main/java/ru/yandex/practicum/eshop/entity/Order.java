@@ -3,9 +3,12 @@ package ru.yandex.practicum.eshop.entity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.util.List;
@@ -31,7 +34,10 @@ public class Order {
   @Column(name = "id", nullable = false)
   private Long id;
   @Column(name = "total_sum", nullable = false)
-  private double totalSum;
-  @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+  private Double totalSum;
+  @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
+  @JoinTable(name = "order_item",
+             joinColumns = @JoinColumn(name = "order_id"),
+             inverseJoinColumns = @JoinColumn(name = "item_id"))
   private List<Item> items;
 }

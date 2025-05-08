@@ -3,7 +3,7 @@ package ru.yandex.practicum.eshop.enums;
 /**
  * Enum для сортировки товаров.
  */
-public enum Sort {
+public enum Sorting {
   NO,
   ALPHA,
   PRICE

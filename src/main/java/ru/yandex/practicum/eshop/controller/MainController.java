@@ -1,5 +1,8 @@
 package ru.yandex.practicum.eshop.controller;
 
+import ch.qos.logback.core.joran.spi.ActionException;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,13 +13,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.view.RedirectView;
 import ru.yandex.practicum.eshop.dto.CartDto;
 import ru.yandex.practicum.eshop.dto.ItemDto;
 import ru.yandex.practicum.eshop.dto.OrderDto;
 import ru.yandex.practicum.eshop.dto.PagingDto;
-import ru.yandex.practicum.eshop.enums.Action;
-import ru.yandex.practicum.eshop.enums.Sort;
+import ru.yandex.practicum.eshop.enums.Sorting;
 import ru.yandex.practicum.eshop.service.ItemService;
 
 /**
@@ -29,6 +32,7 @@ public class MainController {
   public static final String REDIRECT_MAIN = "redirect:/main/items";
   public static final String REDIRECT_CART = "redirect:/cart/items";
   public static final String REDIRECT_ITEMS = "redirect:/items/";
+  public static final String REDIRECT_ORDERS = "redirect:/orders";
   public static final String LOG_CART_UPDATED = "Изменение корзины для товара id={} произведено";
   private final ItemService itemService;
 
@@ -47,31 +51,33 @@ public class MainController {
    *
    * @param pageNumber - номер текущей страницы (по умолчанию, 1)
    * @param pageSize   - максимальное число товаров на странице (по умолчанию, 10)
-   * @param search   - строка с поисков по названию/описанию товара (по умолчанию, пустая строка - все товары)
-   * @param sort   - сортировка перечисление NO, ALPHA, PRICE (по умолчанию, NO - не использовать сортировку).
-   * @param model - модель данных.
+   * @param search     - строка с поисков по названию/описанию товара (по умолчанию, пустая строка -
+   *                   все товары)
+   * @param sort       - сортировка перечисление NO, ALPHA, PRICE (по умолчанию, NO - не
+   *                   использовать сортировку).
+   * @param model      - модель данных.
    * @return главная страница.
    */
   @GetMapping("/main/items")
   public String getItems(@RequestParam(defaultValue = "") String search,
-                         @RequestParam(defaultValue = "NO") Sort sort,
+                         @RequestParam(defaultValue = "NO") Sorting sort,
                          @RequestParam(defaultValue = "10") int pageSize,
-                         @RequestParam(defaultValue = "1") int pageNumber,
+                         @RequestParam(defaultValue = "0") int pageNumber,
                          Model model) {
 
     log.info(
-        "Получен запрос на получение списка товаров для главной страницы. pageNumber={} pageSize={}",
-        pageNumber, pageSize);
+        "Получен запрос на получение списка товаров для главной страницы. pageNumber={} pageSize={} sort={}",
+        pageNumber, pageSize, sort);
 
-    Page<ItemDto> posts = itemService.getItems(search, sort, pageNumber, pageSize);
+    Page<ItemDto> items = itemService.getItems(search, sort, pageNumber, pageSize);
 
-    model.addAttribute("posts", posts.getContent());
+    model.addAttribute("items", items.getContent());
     model.addAttribute("search", search);
     model.addAttribute("paging", new PagingDto(
-        pageNumber,
+        pageNumber + 1,
         pageSize,
-        posts.hasPrevious(),
-        posts.hasNext()
+        items.hasPrevious(),
+        items.hasNext()
     ));
 
     return "main";
@@ -80,19 +86,20 @@ public class MainController {
   /**
    * Изменение количества товаров в корзине на главной странице.
    *
-   * @param id - id товара.
+   * @param itemId - id товара.
    * @param action - действие с товаром в корзине.
    * @return перенаправляет на главную страницу.
    */
   @PostMapping("/main/items/{id}")
-  public String updateMainCartItems(@PathVariable(name = "id") Long id,
-                                    @RequestParam(defaultValue = "") Action action) {
+  public String updateMainCartItems(@PathVariable(name = "id") @NotNull Long itemId,
+                                    @RequestParam(defaultValue = "") @NotBlank String action)
+      throws ActionException {
 
-    log.info("Получен запрос на изменение корзины: {} для товара id = {}", action, id);
+    log.info("Получен запрос на изменение корзины: {} для товара id = {}", action, itemId);
 
-    itemService.editCart(id, action);
+    itemService.editCart(itemId, action);
 
-    log.info(LOG_CART_UPDATED, id);
+    log.info(LOG_CART_UPDATED, itemId);
 
     return REDIRECT_MAIN;
   }
@@ -108,13 +115,13 @@ public class MainController {
     log.info("Получен запрос на получение списка товаров в корзине");
 
     CartDto cartDto = itemService.getCartItems();
-    log.info("Получен список товаров в корзине размеров: {}", cartDto.getItems().size());
+    log.info("Получен список товаров в корзине размером: {}", cartDto.items().size());
 
-    if (cartDto.getItems().isEmpty()) {
+    if (cartDto.items().isEmpty()) {
       model.addAttribute("empty", ("true"));
     } else {
-      model.addAttribute("items", cartDto.getItems());
-      model.addAttribute("total", cartDto.getTotal());
+      model.addAttribute("items", cartDto.items());
+      model.addAttribute("total", cartDto.total());
     }
 
     return "cart";
@@ -123,18 +130,19 @@ public class MainController {
   /**
    * Изменение количества товаров в корзине.
    *
-   * @param id - id товара.
+   * @param itemId - id товара.
    * @param action - действие с товаром в корзине.
    * @return перенаправляет на страницу корзины.
    */
   @PostMapping("/cart/items/{id}")
-  public String updateCartItems(@PathVariable(name = "id") Long id,
-                                @RequestParam(defaultValue = "") Action action) {
+  public String updateCartItems(@PathVariable(name = "id") @NotNull Long itemId,
+                                @RequestParam(defaultValue = "") @NotBlank String action)
+      throws ActionException {
 
-    log.info("Получен запрос на изменение корзины: {} для товара id = {}", action, id);
+    log.info("Получен запрос на изменение корзины: {} для товара id = {}", action, itemId);
 
-    itemService.editCart(id, action);
-    log.info(LOG_CART_UPDATED, id);
+    itemService.editCart(itemId, action);
+    log.info(LOG_CART_UPDATED, itemId);
 
     return REDIRECT_CART;
   }
@@ -142,12 +150,12 @@ public class MainController {
   /**
    * Обрабатывает GET-запросы на получение карточки товара по id.
    *
-   * @param id - id товара.
+   * @param id    - id товара.
    * @param model - модель данных.
    * @return страница карточки товара.
    */
   @GetMapping("/items/{id}")
-  public String getItemById(@PathVariable Long id, Model model) {
+  public String getItemById(@PathVariable @NotNull Long id, Model model) {
     log.info("Получен запрос на получение карточки товара для id = {}", id);
 
     ItemDto itemDto = itemService.getItem(id);
@@ -161,13 +169,13 @@ public class MainController {
   /**
    * Изменение количества товаров в корзине из карточки товара.
    *
-   * @param id - id товара.
+   * @param id     - id товара.
    * @param action - действие с товаром в корзине.
    * @return перенаправляет на страницу карточки товара.
    */
   @PostMapping("/items/{id}")
   public String updateItems(@PathVariable(name = "id") Long id,
-                            @RequestParam(defaultValue = "") Action action) {
+                            @RequestParam(defaultValue = "") String action) throws ActionException {
     log.info("Получен запрос из карточки товара на изменение корзины: {} для товара id = {}",
              action, id);
 
@@ -180,17 +188,19 @@ public class MainController {
   /**
    * Купить товары в корзине.
    *
-   * @param id - id корзины.
    * @return перенаправляет на страницу заказов.
    */
-  @PostMapping("/buy/{id}")
-  public String buyItems(@PathVariable(name = "id") Long id) {
+  @PostMapping("/buy")
+  public String buyItems(RedirectAttributes redirectAttributes) {
     log.info("Получен запрос на покупку товаров в корзине");
 
-    Long orderId = itemService.buyItems(id);
+    Long orderId = itemService.buyItems();
     log.info("Создан новый заказ = {}", orderId);
 
-    return String.format("/orders/%s?newOrder=true", orderId);
+    redirectAttributes.addAttribute("orderId", orderId);
+    redirectAttributes.addFlashAttribute("newOrder", true);
+
+    return REDIRECT_ORDERS;
   }
 
   /**
@@ -214,18 +224,18 @@ public class MainController {
   /**
    * Обрабатывает GET-запросы на получение карточки заказа.
    *
-   * @param id - id заказа.
+   * @param id       - id заказа.
    * @param newOrder - флаг нового заказа.
-   * @param model - модель данных.
+   * @param model    - модель данных.
    * @return страница заказа.
    */
   @GetMapping("/orders/{id}")
-  public String getOrderById(@PathVariable Long id,
+  public String getOrderById(@PathVariable @NotNull Long id,
                              @RequestParam(defaultValue = "false") Boolean newOrder,
                              Model model) {
     log.info("Получен запрос на получение карточки заказа для id = {}", id);
 
-    OrderDto orderDto = itemService.getOrder(id);
+    OrderDto orderDto = itemService.getOrderItems(id);
     log.info("Из базы данных получен объект товара с id: {}", id);
 
     model.addAttribute("order", orderDto);

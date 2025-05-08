@@ -30,11 +30,11 @@ public class Item {
   @Column(name = "title", nullable = false)
   private String title;
   @Column(name = "image_path", nullable = false)
-  private String imagePath;
+  private String imgPath;
   @Column(name = "description", nullable = false)
   private String description;
   @Column(name = "price", nullable = false)
-  private double price;
+  private Double price;
   @Column(name = "count", nullable = false)
-  private int count;
+  private Integer count;
 }
