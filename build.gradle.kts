@@ -24,10 +24,12 @@ dependencies {
     implementation("commons-fileupload:commons-fileupload:1.5")
     implementation("commons-io:commons-io:2.16.1")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
+    implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
 
     annotationProcessor("org.projectlombok:lombok")
     annotationProcessor("org.mapstruct:mapstruct-processor:1.5.5.Final")
 
+    runtimeOnly("io.r2dbc:r2dbc-postgresql")
     runtimeOnly("com.h2database:h2")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")

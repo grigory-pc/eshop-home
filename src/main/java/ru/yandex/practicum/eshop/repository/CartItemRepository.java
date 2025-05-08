@@ -1,14 +1,17 @@
 package ru.yandex.practicum.eshop.repository;
 
-import java.util.List;
 import java.util.Optional;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
+import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import ru.yandex.practicum.eshop.entity.CartItem;
 
 /**
  * Получение данных из таблицы CartItem.
  */
-public interface CartItemRepository extends JpaRepository<CartItem, Long> {
+@Repository
+public interface CartItemRepository extends R2dbcRepository<CartItem, Long> {
 
   /**
    * Получение записи соотношения товара к корзине.
@@ -17,7 +20,7 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
    * @param itemId - id товара.
    * @return запись соотношения товара к корзине.
    */
-  Optional<CartItem> findCartItemByCartIdAndItemId(Long cartId, Long itemId);
+  Mono<Optional<CartItem>> findCartItemByCartIdAndItemId(Long cartId, Long itemId);
 
   /**
    * Получение всех записей по cart id.
@@ -25,12 +28,12 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
    * @param cartId - id корзины.
    * @return список всех записей, полученных по cart id.
    */
-  List<CartItem> findCartItemsByCartId(Long cartId);
+  Flux<CartItem> findCartItemsByCartId(Long cartId);
 
   /**
    * Удаление всех связей по id корзины.
    *
    * @param cartId - id корзины.
    */
-  void deleteAllByCartId(Long cartId);
+  Mono<Void> deleteAllByCartId(Long cartId);
 }
