@@ -25,6 +25,7 @@ dependencies {
     implementation("commons-io:commons-io:2.16.1")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
+    implementation ("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5")
 
     annotationProcessor("org.projectlombok:lombok")
     annotationProcessor("org.mapstruct:mapstruct-processor:1.5.5.Final")
