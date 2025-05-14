@@ -72,10 +72,14 @@ public class ItemServiceImpl implements ItemService {
                                                   total));
                              })
              : itemRepository.findByTitleContainingIgnoreCase(search, pageableItems)
-                             .map(page -> {
-                               List<Item> items = page.getContent();
-                               return itemMapper.toDtoPage(new PageImpl<>(items, page.getPageable(),
-                                                                          page.getTotalElements()));
+                             .skip((long) pageNumber * pageSize)
+                             .limitRate(pageSize)
+                             .collectList()
+                             .flatMap(items -> {
+                               long total = items.size();
+                               return Mono.just(
+                                   new PageImpl<>(itemMapper.toListDto(items), pageableItems,
+                                                  total));
                              })
                              .onErrorResume(e -> {
                                log.error(MESSAGE_LOG_DB_RESPONSE_ERROR.getMessage(), e);
@@ -106,10 +110,10 @@ public class ItemServiceImpl implements ItemService {
                                                                                        optionalCartItem));
                                                             }
                                                             case DELETE -> {
-                                                              return optionalCartItem.isPresent() ?
-                                                                     cartItemRepository.delete(
-                                                                         optionalCartItem.get()) :
-                                                                     Mono.empty();
+                                                              return optionalCartItem.map(
+                                                                                         cartItemRepository::delete)
+                                                                                     .orElseGet(
+                                                                                         Mono::empty);
                                                             }
                                                             default -> {
                                                               return Mono.error(new ActionException(
@@ -196,7 +200,7 @@ public class ItemServiceImpl implements ItemService {
                                                                                    savedOrder);
                                                    });
                            })
-                           .flatMap(order -> flushItemAndCart(CART_ID).thenReturn(order))
+                           .flatMap(order -> flushItemAndCart().thenReturn(order))
                            .map(Order::getId)
                            .onErrorResume(e -> {
                              log.error(MESSAGE_LOG_DB_RESPONSE_ERROR.getMessage(), e);
@@ -256,13 +260,13 @@ public class ItemServiceImpl implements ItemService {
   }
 
 
-  private Mono<Void> flushItemAndCart(Long cartId) {
+  private Mono<Void> flushItemAndCart() {
     return Mono.defer(() -> {
       log.info(MESSAGE_LOG_FLUSH_CART.getMessage());
 
-      Cart cart = new Cart(cartId, TOTAL_INIT, new ArrayList<>());
+      Cart cart = new Cart(CART_ID, TOTAL_INIT, new ArrayList<>());
       return cartRepository.save(cart)
-                           .then(cartItemRepository.deleteAllByCartId(cartId))
+                           .then(cartItemRepository.deleteAllByCartId(CART_ID))
                            .then(itemRepository.updateAllCountToZero())
                            .doOnSuccess(v -> log.info(MESSAGE_LOG_FLUSH_CART_SUCCESS.getMessage()))
                            .then();
