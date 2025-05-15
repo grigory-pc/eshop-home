@@ -1,11 +1,8 @@
 package ru.yandex.practicum.eshop.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,24 +14,22 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-@Entity
 @Builder
 @AllArgsConstructor
 @RequiredArgsConstructor
 @Table(name = "items")
 public class Item {
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = "id", nullable = false)
+  @Column("id")
   private Long id;
-  @Column(name = "title", nullable = false)
+  @Column("title")
   private String title;
-  @Column(name = "image_path", nullable = false)
+  @Column("image_path")
   private String imgPath;
-  @Column(name = "description", nullable = false)
+  @Column("description")
   private String description;
-  @Column(name = "price", nullable = false)
+  @Column("price")
   private Double price;
-  @Column(name = "count", nullable = false)
+  @Column("count")
   private Integer count;
 }
