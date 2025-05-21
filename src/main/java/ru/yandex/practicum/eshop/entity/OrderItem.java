@@ -20,9 +20,10 @@ import lombok.Setter;
 @Table(name = "order_item")
 public class OrderItem {
   @Id
+  @Column("id")
+  private Long id;
   @Column("order_id")
   private Long orderId;
-  @Id
   @Column("item_id")
   private Long itemId;
   private Integer count;

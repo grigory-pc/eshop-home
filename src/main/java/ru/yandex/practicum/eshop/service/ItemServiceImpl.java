@@ -182,7 +182,9 @@ public class ItemServiceImpl implements ItemService {
 
       return cartRepository.findById(CART_ID)
                            .flatMap(cart -> {
-                             List<Item> items = new ArrayList<>(cart.getItems());
+                             //ToDo скорректировать в чатси получения товаров
+//                             List<Item> items = new ArrayList<>(cart.getItems());
+                             List<Item> items = new ArrayList<>();
 
                              Order order = Order.builder()
                                                 .items(items)
@@ -238,7 +240,11 @@ public class ItemServiceImpl implements ItemService {
     return items.stream()
                 .map(item -> {
                   int count = item.getCount() != null ? item.getCount() : 0;
-                  return new OrderItem(savedOrder.getId(), item.getId(), count);
+                  return OrderItem.builder()
+                                  .orderId(savedOrder.getId())
+                                  .itemId(item.getId())
+                                  .count(count)
+                                  .build();
                 })
                 .toList();
   }
@@ -264,7 +270,7 @@ public class ItemServiceImpl implements ItemService {
     return Mono.defer(() -> {
       log.info(MESSAGE_LOG_FLUSH_CART.getMessage());
 
-      Cart cart = new Cart(CART_ID, TOTAL_INIT, new ArrayList<>());
+      Cart cart = new Cart(CART_ID, TOTAL_INIT);
       return cartRepository.save(cart)
                            .then(cartItemRepository.deleteAllByCartId(CART_ID))
                            .then(itemRepository.updateAllCountToZero())

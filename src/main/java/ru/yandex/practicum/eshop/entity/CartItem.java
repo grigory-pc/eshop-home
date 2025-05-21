@@ -20,9 +20,10 @@ import org.springframework.data.relational.core.mapping.Table;
 @Table(name = "cart_item")
 public class CartItem {
   @Id
+  @Column("id")
+  private Long id;
   @Column("cart_id")
   private Long cartId;
-  @Id
   @Column("item_id")
   private Long itemId;
   private Integer count;

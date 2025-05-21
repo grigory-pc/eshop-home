@@ -56,7 +56,7 @@ public class Data {
         return Cart.builder()
                 .id(CART_ID)
                 .total(getItemPlusCount().getPrice())
-                .items(List.of(getItemPlusCount()))
+//                .items(List.of(getItemPlusCount()))
                 .build();
     }
 
