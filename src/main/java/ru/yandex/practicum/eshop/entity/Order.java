@@ -1,16 +1,8 @@
 package ru.yandex.practicum.eshop.entity;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,21 +15,15 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-@Entity
 @Builder
 @AllArgsConstructor
 @RequiredArgsConstructor
 @Table(name = "orders")
 public class Order {
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = "id", nullable = false)
+  @Column("id")
   private Long id;
-  @Column(name = "total_sum", nullable = false)
+  @Column("total_sum")
   private Double totalSum;
-  @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
-  @JoinTable(name = "order_item",
-             joinColumns = @JoinColumn(name = "order_id"),
-             inverseJoinColumns = @JoinColumn(name = "item_id"))
   private List<Item> items;
 }

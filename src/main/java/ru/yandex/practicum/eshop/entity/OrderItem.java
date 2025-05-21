@@ -1,10 +1,8 @@
 package ru.yandex.practicum.eshop.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.IdClass;
-import jakarta.persistence.Table;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,18 +14,16 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-@Entity
 @Builder
 @AllArgsConstructor
 @RequiredArgsConstructor
-@IdClass(OrderItemKey.class)
 @Table(name = "order_item")
 public class OrderItem {
   @Id
-  @Column(name = "order_id", nullable = false)
+  @Column("order_id")
   private Long orderId;
   @Id
-  @Column(name = "item_id", nullable = false)
+  @Column("item_id")
   private Long itemId;
   private Integer count;
 }
