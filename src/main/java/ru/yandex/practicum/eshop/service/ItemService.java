@@ -1,7 +1,7 @@
 package ru.yandex.practicum.eshop.service;
 
 import ch.qos.logback.core.joran.spi.ActionException;
-import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ru.yandex.practicum.eshop.dto.CartDto;
@@ -22,7 +22,7 @@ public interface ItemService {
    * @param pageSize    - количество записей.
    * @return список товаров.
    */
-  Mono<Page<ItemDto>> getItems(String search, Sorting sort, int pageNumber, int pageSize);
+  Mono<PageImpl<ItemDto>> getItems(String search, Sorting sort, int pageNumber, int pageSize);
 
   /**
    * Изменение состава корзины товаров.

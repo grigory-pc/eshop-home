@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -56,78 +55,97 @@ public class ItemServiceImpl implements ItemService {
   private final OrderItemRepository orderItemRepository;
 
   @Override
-  public Mono<Page<ItemDto>> getItems(String search, Sorting sort, int pageNumber, int pageSize) {
+  public Mono<PageImpl<ItemDto>> getItems(String search, Sorting sort, int pageNumber,
+                                          int pageSize) {
     Pageable pageableItems = getPageableItemsRequest(sort, pageNumber, pageSize);
+    log.info(MESSAGE_LOG_DB_GET_REQUEST.getMessage());
 
-    return Mono.defer(() -> {
-      log.info(MESSAGE_LOG_DB_GET_REQUEST.getMessage());
+    if (search.isEmpty()) {
+      return itemRepository.findAll()
+                           .collectList()
+                           .flatMap(items -> {
+                             long total = items.size();
+                             return Mono.just(
+                                 new PageImpl<>(itemMapper.toListDto(items),
+                                                pageableItems,
+                                                total));
+                           })
+                           .onErrorResume(e -> {
+                             log.error(MESSAGE_LOG_DB_RESPONSE_ERROR.getMessage(), e);
+                             return Mono.error(new DataBaseRequestException(
+                                 MESSAGE_LOG_DB_RESPONSE_ERROR.getMessage(), e));
+                           });
 
-      return search.isEmpty()
-             ? itemRepository.findAll()
-                             .collectList()
-                             .flatMap(items -> {
-                               long total = items.size();
-                               return Mono.just(
-                                   new PageImpl<>(itemMapper.toListDto(items), pageableItems,
-                                                  total));
-                             })
-             : itemRepository.findByTitleContainingIgnoreCase(search, pageableItems)
-                             .skip((long) pageNumber * pageSize)
-                             .limitRate(pageSize)
-                             .collectList()
-                             .flatMap(items -> {
-                               long total = items.size();
-                               return Mono.just(
-                                   new PageImpl<>(itemMapper.toListDto(items), pageableItems,
-                                                  total));
-                             })
-                             .onErrorResume(e -> {
-                               log.error(MESSAGE_LOG_DB_RESPONSE_ERROR.getMessage(), e);
-                               return Mono.error(new DataBaseRequestException(
-                                   MESSAGE_LOG_DB_RESPONSE_ERROR.getMessage(), e));
-                             });
-    });
+    } else {
+      return itemRepository.findByTitleContainingIgnoreCase(search, pageableItems)
+                           .skip((long) pageNumber * pageSize)
+                           .limitRate(pageSize)
+                           .collectList()
+                           .flatMap(items -> {
+                             long total = items.size();
+                             return Mono.just(
+                                 new PageImpl<>(itemMapper.toListDto(items),
+                                                pageableItems,
+                                                total));
+                           })
+                           .onErrorResume(e -> {
+                             log.error(MESSAGE_LOG_DB_RESPONSE_ERROR.getMessage(), e);
+                             return Mono.error(new DataBaseRequestException(
+                                 MESSAGE_LOG_DB_RESPONSE_ERROR.getMessage(), e));
+                           });
+    }
   }
 
   @Override
   public Mono<Void> editCart(Long itemId, String actionRequest) throws ActionException {
     Action action = Action.getValueOf(actionRequest);
 
-    return cartRepository.findById(CART_ID)
-                         .flatMap(existingCart ->
-                                      cartItemRepository.findCartItemByCartIdAndItemId(CART_ID,
-                                                                                       itemId)
-                                                        .flatMap(optionalCartItem -> {
-                                                          switch (action) {
-                                                            case PLUS -> {
-                                                              return incrementItem(itemId,
-                                                                                   Mono.just(
-                                                                                       optionalCartItem));
-                                                            }
-                                                            case MINUS -> {
-                                                              return decrementItem(itemId,
-                                                                                   Mono.just(
-                                                                                       optionalCartItem));
-                                                            }
-                                                            case DELETE -> {
-                                                              return optionalCartItem.map(
-                                                                                         cartItemRepository::delete)
-                                                                                     .orElseGet(
-                                                                                         Mono::empty);
-                                                            }
-                                                            default -> {
-                                                              return Mono.error(new ActionException(
-                                                                  "Некорректное действие"));
-                                                            }
-                                                          }
-                                                        })
-                                                        .then(calculateTotal())
-                                                        .doOnNext(existingCart::setTotal)
-                                                        .then(cartRepository.save(existingCart))
-                                                        .then(Mono.empty())
-                         )
-                         .onErrorResume(e -> Mono.error(new DataBaseRequestException(
-                             MESSAGE_LOG_DB_RESPONSE_ERROR.getMessage(), e))).then();
+    //    return cartRepository.findById(CART_ID)
+    Mono<Void> actions = cartRepository.findById(CART_ID)
+                                       .flatMap(existingCart ->
+                                                    cartItemRepository.findCartItemByCartIdAndItemId(
+                                                                          CART_ID,
+                                                                          itemId)
+                                                                      .flatMap(optionalCartItem -> {
+                                                                        switch (action) {
+                                                                          case PLUS -> {
+                                                                            return incrementItem(
+                                                                                itemId,
+                                                                                Mono.just(
+                                                                                    optionalCartItem));
+                                                                          }
+                                                                          case MINUS -> {
+                                                                            return decrementItem(
+                                                                                itemId,
+                                                                                Mono.just(
+                                                                                    optionalCartItem));
+                                                                          }
+                                                                          case DELETE -> {
+                                                                            return optionalCartItem.map(
+                                                                                                       cartItemRepository::delete)
+                                                                                                   .orElseGet(
+                                                                                                       Mono::empty);
+                                                                          }
+                                                                          default -> {
+                                                                            return Mono.error(
+                                                                                new ActionException(
+                                                                                    "Некорректное действие"));
+                                                                          }
+                                                                        }
+                                                                      })
+                                                                      .then(calculateTotal())
+                                                                      .doOnNext(
+                                                                          existingCart::setTotal)
+                                                                      .then(cartRepository.save(
+                                                                          existingCart))
+                                                                      .then(Mono.empty())
+                                       )
+                                       .onErrorResume(e ->
+                                                          Mono.error(new DataBaseRequestException(
+                                                              MESSAGE_LOG_DB_RESPONSE_ERROR.getMessage(),
+                                                              e))).then();
+    return actions;
+
   }
 
   @Override
@@ -183,7 +201,7 @@ public class ItemServiceImpl implements ItemService {
       return cartRepository.findById(CART_ID)
                            .flatMap(cart -> {
                              //ToDo скорректировать в чатси получения товаров
-//                             List<Item> items = new ArrayList<>(cart.getItems());
+                             //                             List<Item> items = new ArrayList<>(cart.getItems());
                              List<Item> items = new ArrayList<>();
 
                              Order order = Order.builder()
