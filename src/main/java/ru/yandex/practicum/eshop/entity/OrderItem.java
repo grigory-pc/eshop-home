@@ -26,5 +26,6 @@ public class OrderItem {
   private Long orderId;
   @Column("item_id")
   private Long itemId;
+  @Column("count")
   private Integer count;
 }

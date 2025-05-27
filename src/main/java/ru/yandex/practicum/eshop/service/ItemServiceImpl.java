@@ -1,6 +1,5 @@
 package ru.yandex.practicum.eshop.service;
 
-import ch.qos.logback.core.joran.spi.ActionException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +23,7 @@ import ru.yandex.practicum.eshop.entity.Order;
 import ru.yandex.practicum.eshop.entity.OrderItem;
 import ru.yandex.practicum.eshop.enums.Action;
 import ru.yandex.practicum.eshop.enums.Sorting;
+import ru.yandex.practicum.eshop.exceptions.ActionException;
 import ru.yandex.practicum.eshop.exceptions.DataBaseRequestException;
 import ru.yandex.practicum.eshop.exceptions.ItemNotFoundException;
 import ru.yandex.practicum.eshop.exceptions.SortingException;
@@ -97,55 +97,12 @@ public class ItemServiceImpl implements ItemService {
   }
 
   @Override
-  public Mono<Void> editCart(Long itemId, String actionRequest) throws ActionException {
+  public Mono<Void> editCart(Long itemId, String actionRequest) {
     Action action = Action.getValueOf(actionRequest);
 
-    //    return cartRepository.findById(CART_ID)
-    Mono<Void> actions = cartRepository.findById(CART_ID)
-                                       .flatMap(existingCart ->
-                                                    cartItemRepository.findCartItemByCartIdAndItemId(
-                                                                          CART_ID,
-                                                                          itemId)
-                                                                      .flatMap(optionalCartItem -> {
-                                                                        switch (action) {
-                                                                          case PLUS -> {
-                                                                            return incrementItem(
-                                                                                itemId,
-                                                                                Mono.just(
-                                                                                    optionalCartItem));
-                                                                          }
-                                                                          case MINUS -> {
-                                                                            return decrementItem(
-                                                                                itemId,
-                                                                                Mono.just(
-                                                                                    optionalCartItem));
-                                                                          }
-                                                                          case DELETE -> {
-                                                                            return optionalCartItem.map(
-                                                                                                       cartItemRepository::delete)
-                                                                                                   .orElseGet(
-                                                                                                       Mono::empty);
-                                                                          }
-                                                                          default -> {
-                                                                            return Mono.error(
-                                                                                new ActionException(
-                                                                                    "Некорректное действие"));
-                                                                          }
-                                                                        }
-                                                                      })
-                                                                      .then(calculateTotal())
-                                                                      .doOnNext(
-                                                                          existingCart::setTotal)
-                                                                      .then(cartRepository.save(
-                                                                          existingCart))
-                                                                      .then(Mono.empty())
-                                       )
-                                       .onErrorResume(e ->
-                                                          Mono.error(new DataBaseRequestException(
-                                                              MESSAGE_LOG_DB_RESPONSE_ERROR.getMessage(),
-                                                              e))).then();
-    return actions;
-
+    return cartRepository.findById(CART_ID)
+                         .flatMap(existingCart -> handleCartItem(existingCart, itemId, action))
+                         .onErrorResume(this::handleDatabaseError);
   }
 
   @Override
@@ -254,6 +211,38 @@ public class ItemServiceImpl implements ItemService {
         });
   }
 
+  private Mono<Void> handleCartItem(Cart existingCart, Long itemId, Action action) {
+    return cartItemRepository.findCartItemByCartIdAndItemId(CART_ID, itemId)
+                             .flatMap(optionalCartItem -> {
+                               if (optionalCartItem.isEmpty()) {
+                                 return Mono.error(
+                                     new ActionException("Товар не найден в корзине"));
+                               }
+
+                               return switch (action) {
+                                 case PLUS -> incrementItem(itemId, optionalCartItem);
+                                 case MINUS -> decrementItem(itemId, optionalCartItem);
+                                 case DELETE -> cartItemRepository.delete(optionalCartItem.get());
+                                 default ->
+                                     Mono.error(new ActionException("Некорректное действие"));
+                               };
+                             })
+                             .then(updateCartTotal(existingCart));
+  }
+
+  private Mono<Void> updateCartTotal(Cart existingCart) {
+    return calculateTotal()
+        .doOnNext(existingCart::setTotal)
+        .then(cartRepository.save(existingCart))
+        .then();
+  }
+
+  private Mono<Void> handleDatabaseError(Throwable e) {
+    return Mono.error(new DataBaseRequestException(
+        MESSAGE_LOG_DB_RESPONSE_ERROR.getMessage(),
+        e));
+  }
+
   private List<OrderItem> createAndGetOrderItems(List<Item> items, Order savedOrder) {
     return items.stream()
                 .map(item -> {
@@ -314,37 +303,32 @@ public class ItemServiceImpl implements ItemService {
                              .reduce(0.0, Double::sum);
   }
 
-  private Mono<Void> decrementItem(Long itemId, Mono<Optional<CartItem>> existingCartItem) {
+  private Mono<Void> decrementItem(Long itemId, Optional<CartItem> existingCartItem) {
     return existingCartItem
-        .flatMap(optionalCartItem -> {
-          if (optionalCartItem.isPresent()) {
-            CartItem cartItem = optionalCartItem.get();
-            if (cartItem.getCount() >= 1) {
-              cartItem.setCount(cartItem.getCount() - 1);
-              return cartItemRepository.save(cartItem)
-                                       .then(itemRepository.decrementCount(itemId));
-            } else {
-              return cartItemRepository.delete(cartItem);
-            }
+        .map(cartItem -> {
+          if (cartItem.getCount() > 1) {
+            cartItem.setCount(cartItem.getCount() - 1);
+            return cartItemRepository.save(cartItem)
+                                     .then(itemRepository.decrementCount(itemId));
+          } else {
+            return cartItemRepository.delete(cartItem);
           }
-          return Mono.empty();
-        });
+        })
+        .orElseGet(Mono::empty);
   }
 
-  private Mono<Void> incrementItem(Long itemId, Mono<Optional<CartItem>> existingCartItem) {
+  private Mono<Void> incrementItem(Long itemId, Optional<CartItem> existingCartItem) {
     return existingCartItem
-        .flatMap(optionalCartItem -> {
-          if (optionalCartItem.isPresent()) {
-            CartItem cartItem = optionalCartItem.get();
-            cartItem.setCount(cartItem.getCount() + 1);
-            return cartItemRepository.save(cartItem);
-          } else {
-            CartItem newItem = new CartItem();
-            newItem.setCartId(CART_ID);
-            newItem.setItemId(itemId);
-            newItem.setCount(1);
-            return cartItemRepository.save(newItem);
-          }
+        .map(cartItem -> {
+          cartItem.setCount(cartItem.getCount() + 1);
+          return cartItemRepository.save(cartItem);
+        })
+        .orElseGet(() -> {
+          CartItem newItem = new CartItem();
+          newItem.setCartId(CART_ID);
+          newItem.setItemId(itemId);
+          newItem.setCount(1);
+          return cartItemRepository.save(newItem);
         })
         .then(itemRepository.incrementCount(itemId));
   }
