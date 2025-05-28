@@ -212,29 +212,20 @@ public class ItemServiceImpl implements ItemService {
   }
 
   private Mono<Void> handleCartItem(Cart existingCart, Long itemId, Action action) {
-    return cartItemRepository.findCartItemByCartIdAndItemId(CART_ID, itemId)
-                             .flatMap(optionalCartItem -> {
-                               if (optionalCartItem.isEmpty()) {
-                                 return Mono.error(
-                                     new ActionException("Товар не найден в корзине"));
-                               }
-
-                               return switch (action) {
-                                 case PLUS -> incrementItem(itemId, optionalCartItem);
-                                 case MINUS -> decrementItem(itemId, optionalCartItem);
-                                 case DELETE -> cartItemRepository.delete(optionalCartItem.get());
-                                 default ->
-                                     Mono.error(new ActionException("Некорректное действие"));
-                               };
-                             })
-                             .then(updateCartTotal(existingCart));
-  }
-
-  private Mono<Void> updateCartTotal(Cart existingCart) {
-    return calculateTotal()
-        .doOnNext(existingCart::setTotal)
-        .then(cartRepository.save(existingCart))
-        .then();
+    return switch (action) {
+      case PLUS -> incrementItem(itemId, existingCart);
+      case MINUS -> decrementItem(itemId, existingCart);
+      case DELETE -> cartItemRepository.findCartItemByCartIdAndItemId(CART_ID, itemId)
+                                       .map(Optional::ofNullable)
+                                       .switchIfEmpty(Mono.error(
+                                           new ActionException("Товар не найден в корзине")))
+                                       .flatMap(optionalCartItem -> optionalCartItem.map(
+                                                                                        cartItemRepository::delete)
+                                                                                    .orElse(
+                                                                                        Mono.error(
+                                                                                            new ActionException(
+                                                                                                "Товар не найден в корзине"))));
+    };
   }
 
   private Mono<Void> handleDatabaseError(Throwable e) {
@@ -295,6 +286,52 @@ public class ItemServiceImpl implements ItemService {
     };
   }
 
+  private Mono<Void> incrementItem(Long itemId, Cart existingCart) {
+    return cartItemRepository.findCartItemByCartIdAndItemId(CART_ID, itemId)
+                             .map(Optional::ofNullable)
+                             .switchIfEmpty(
+                                 cartItemRepository.save(
+                                     CartItem.builder()
+                                             .cartId(CART_ID)
+                                             .itemId(itemId)
+                                             .count(1)
+                                             .build()
+                                 ).singleOptional()
+                             )
+                             .flatMap(optionalCartItem -> optionalCartItem.map(cartItem -> {
+                               cartItem.setCount(cartItem.getCount() + 1);
+                               return cartItemRepository.save(cartItem);
+                             }).orElseGet(Mono::empty))
+                             .then(itemRepository.incrementCount(itemId))
+                             .then(updateCartTotal(existingCart));
+  }
+
+  private Mono<Void> decrementItem(Long itemId, Cart existingCart) {
+    return cartItemRepository.findCartItemByCartIdAndItemId(CART_ID, itemId)
+                             .map(Optional::ofNullable)
+                             .switchIfEmpty(
+                                 Mono.error(new ActionException("Товар не найден в корзине")))
+                             .flatMap(optionalCartItem -> optionalCartItem.map(cartItem -> {
+                               if (cartItem.getCount() > 1) {
+                                 cartItem.setCount(cartItem.getCount() - 1);
+                                 return cartItemRepository.save(cartItem)
+                                                          .then(itemRepository.decrementCount(
+                                                              itemId));
+                               } else {
+                                 return cartItemRepository.delete(cartItem);
+                               }
+                             }).orElse(
+                                 Mono.error(new ActionException("Товар не найден в корзине"))))
+                             .then(updateCartTotal(existingCart));
+  }
+
+  private Mono<Void> updateCartTotal(Cart existingCart) {
+    return calculateTotal()
+        .doOnNext(existingCart::setTotal)
+        .then(cartRepository.save(existingCart))
+        .then();
+  }
+
   private Mono<Double> calculateTotal() {
     return cartItemRepository.findCartItemsByCartId(CART_ID)
                              .flatMap(cartItem -> itemRepository.findById(cartItem.getItemId())
@@ -302,37 +339,6 @@ public class ItemServiceImpl implements ItemService {
                                                                              * cartItem.getCount()))
                              .reduce(0.0, Double::sum);
   }
-
-  private Mono<Void> decrementItem(Long itemId, Optional<CartItem> existingCartItem) {
-    return existingCartItem
-        .map(cartItem -> {
-          if (cartItem.getCount() > 1) {
-            cartItem.setCount(cartItem.getCount() - 1);
-            return cartItemRepository.save(cartItem)
-                                     .then(itemRepository.decrementCount(itemId));
-          } else {
-            return cartItemRepository.delete(cartItem);
-          }
-        })
-        .orElseGet(Mono::empty);
-  }
-
-  private Mono<Void> incrementItem(Long itemId, Optional<CartItem> existingCartItem) {
-    return existingCartItem
-        .map(cartItem -> {
-          cartItem.setCount(cartItem.getCount() + 1);
-          return cartItemRepository.save(cartItem);
-        })
-        .orElseGet(() -> {
-          CartItem newItem = new CartItem();
-          newItem.setCartId(CART_ID);
-          newItem.setItemId(itemId);
-          newItem.setCount(1);
-          return cartItemRepository.save(newItem);
-        })
-        .then(itemRepository.incrementCount(itemId));
-  }
-
 
   private Mono<List<Item>> getItemsFromCart() {
     return cartItemRepository.findCartItemsByCartId(CART_ID)

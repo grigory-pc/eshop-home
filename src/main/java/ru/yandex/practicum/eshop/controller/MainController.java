@@ -16,7 +16,6 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.view.RedirectView;
 import reactor.core.publisher.Mono;
-import ru.yandex.practicum.eshop.dto.ItemDto;
 import ru.yandex.practicum.eshop.dto.PagingDto;
 import ru.yandex.practicum.eshop.enums.Sorting;
 import ru.yandex.practicum.eshop.service.ItemService;
@@ -32,7 +31,6 @@ public class MainController {
   public static final String REDIRECT_CART = "redirect:/cart/items";
   public static final String REDIRECT_ITEMS = "redirect:/items/";
   public static final String REDIRECT_ORDERS = "redirect:/orders";
-  public static final String LOG_CART_UPDATED = "Изменение корзины для товара id={} произведено";
   private final ItemService itemService;
 
   /**
@@ -100,11 +98,8 @@ public class MainController {
 
     log.info("Получен запрос на изменение корзины: {} для товара id = {}", action, itemId);
 
-    itemService.editCart(itemId, action);
-
-    log.info(LOG_CART_UPDATED, itemId);
-
-    return Mono.just(REDIRECT_MAIN);
+    return itemService.editCart(itemId, action)
+                      .then(Mono.just(REDIRECT_MAIN));
   }
 
   /**
@@ -148,10 +143,8 @@ public class MainController {
 
     log.info("Получен запрос на изменение корзины: {} для товара id = {}", action, itemId);
 
-    itemService.editCart(itemId, action);
-    log.info(LOG_CART_UPDATED, itemId);
-
-    return Mono.just(REDIRECT_CART);
+    return itemService.editCart(itemId, action)
+                      .then(Mono.just(REDIRECT_CART));
   }
 
   /**
@@ -165,12 +158,12 @@ public class MainController {
   public Mono<String> getItemById(@PathVariable @NotNull Long id, Model model) {
     log.info("Получен запрос на получение карточки товара для id = {}", id);
 
-    Mono<ItemDto> itemDto = itemService.getItem(id);
-    log.info("Из базы данных получен объект товара с id: {}", id);
-
-    model.addAttribute("item", itemDto);
-
-    return Mono.just("item");
+    return itemService.getItem(id)
+                      .doOnNext(item -> {
+                        log.info("Из базы данных получен объект товара с id: {}", id);
+                        model.addAttribute("item", item);
+                      })
+                      .thenReturn("item");
   }
 
   /**
@@ -187,10 +180,9 @@ public class MainController {
     log.info("Получен запрос из карточки товара на изменение корзины: {} для товара id = {}",
              action, id);
 
-    itemService.editCart(id, action);
-    log.info(LOG_CART_UPDATED, id);
 
-    return Mono.just(REDIRECT_ITEMS + id);
+    return itemService.editCart(id, action)
+                      .then(Mono.just(REDIRECT_ITEMS + id));
   }
 
   /**
@@ -202,13 +194,13 @@ public class MainController {
   public Mono<String> buyItems(RedirectAttributes redirectAttributes) {
     log.info("Получен запрос на покупку товаров в корзине");
 
-    Mono<Long> orderId = itemService.buyItems();
-    log.info("Создан новый заказ = {}", orderId);
-
-    redirectAttributes.addAttribute("orderId", orderId);
-    redirectAttributes.addFlashAttribute("newOrder", true);
-
-    return Mono.just(REDIRECT_ORDERS);
+    return itemService.buyItems()
+                      .doOnNext(orderId -> {
+                        log.info("Создан новый заказ = {}", orderId);
+                        redirectAttributes.addAttribute("orderId", orderId);
+                        redirectAttributes.addFlashAttribute("newOrder", true);
+                      })
+                      .thenReturn(REDIRECT_ORDERS);
   }
 
   /**
