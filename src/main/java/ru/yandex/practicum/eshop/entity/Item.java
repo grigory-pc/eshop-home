@@ -17,7 +17,7 @@ import lombok.Setter;
 @Builder
 @AllArgsConstructor
 @RequiredArgsConstructor
-@Table(name = "items")
+@Table(name = "item")
 public class Item {
   @Id
   @Column("id")

@@ -19,7 +19,7 @@ import ru.yandex.practicum.eshop.dto.OrderDto;
 import ru.yandex.practicum.eshop.entity.Cart;
 import ru.yandex.practicum.eshop.entity.CartItem;
 import ru.yandex.practicum.eshop.entity.Item;
-import ru.yandex.practicum.eshop.entity.Order;
+import ru.yandex.practicum.eshop.entity.Orders;
 import ru.yandex.practicum.eshop.entity.OrderItem;
 import ru.yandex.practicum.eshop.enums.Action;
 import ru.yandex.practicum.eshop.enums.Sorting;
@@ -96,6 +96,7 @@ public class ItemServiceImpl implements ItemService {
     }
   }
 
+//  @Transactional("transactionManager")
   @Override
   public Mono<Void> editCart(Long itemId, String actionRequest) {
     Action action = Action.getValueOf(actionRequest);
@@ -161,24 +162,24 @@ public class ItemServiceImpl implements ItemService {
                              //                             List<Item> items = new ArrayList<>(cart.getItems());
                              List<Item> items = new ArrayList<>();
 
-                             Order order = Order.builder()
-                                                .items(items)
-                                                .totalSum(cart.getTotal())
-                                                .build();
+                             Orders orders = Orders.builder()
+                                                   .items(items)
+                                                   .totalSum(cart.getTotal())
+                                                   .build();
 
-                             return orderRepository.save(order)
-                                                   .flatMap(savedOrder -> {
+                             return orderRepository.save(orders)
+                                                   .flatMap(savedOrders -> {
                                                      List<OrderItem> orderItems
                                                          = createAndGetOrderItems(items,
-                                                                                  savedOrder);
+                                                                                  savedOrders);
                                                      return orderItemRepository.saveAll(orderItems)
                                                                                .collectList()
                                                                                .thenReturn(
-                                                                                   savedOrder);
+                                                                                   savedOrders);
                                                    });
                            })
-                           .flatMap(order -> flushItemAndCart().thenReturn(order))
-                           .map(Order::getId)
+                           .flatMap(orders -> flushItemAndCart().thenReturn(orders))
+                           .map(Orders::getId)
                            .onErrorResume(e -> {
                              log.error(MESSAGE_LOG_DB_RESPONSE_ERROR.getMessage(), e);
                              return Mono.error(new DataBaseRequestException(
@@ -190,7 +191,7 @@ public class ItemServiceImpl implements ItemService {
   @Override
   public Flux<OrderDto> getOrders() {
     return orderRepository.findAll()
-                          .flatMap(order -> getOrderItems(order.getId()));
+                          .flatMap(orders -> getOrderItems(orders.getId()));
   }
 
   @Override
@@ -234,12 +235,12 @@ public class ItemServiceImpl implements ItemService {
         e));
   }
 
-  private List<OrderItem> createAndGetOrderItems(List<Item> items, Order savedOrder) {
+  private List<OrderItem> createAndGetOrderItems(List<Item> items, Orders savedOrders) {
     return items.stream()
                 .map(item -> {
                   int count = item.getCount() != null ? item.getCount() : 0;
                   return OrderItem.builder()
-                                  .orderId(savedOrder.getId())
+                                  .orderId(savedOrders.getId())
                                   .itemId(item.getId())
                                   .count(count)
                                   .build();
@@ -303,7 +304,14 @@ public class ItemServiceImpl implements ItemService {
                                return cartItemRepository.save(cartItem);
                              }).orElseGet(Mono::empty))
                              .then(itemRepository.incrementCount(itemId))
-                             .then(updateCartTotal(existingCart));
+                             .then(updateCartTotal(existingCart))
+                             .onErrorResume(e -> {
+                               if (e instanceof Exception) {
+                                 return Mono.error(new DataBaseRequestException("Ошибка доступа к базе данных", e));
+                               } else {
+                                 return Mono.error(new DataBaseRequestException("Произошла ошибка при обновлении корзины", e));
+                               }
+                             });
   }
 
   private Mono<Void> decrementItem(Long itemId, Cart existingCart) {

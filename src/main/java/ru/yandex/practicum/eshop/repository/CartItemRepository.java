@@ -21,7 +21,7 @@ public interface CartItemRepository extends R2dbcRepository<CartItem, Long> {
    * @param itemId - id товара.
    * @return запись соотношения товара к корзине.
    */
-  @Query("SELECT * FROM cart_items WHERE cart_id = :cartId AND item_id = :itemId")
+  @Query("SELECT * FROM cart_item WHERE cart_id = :cartId AND item_id = :itemId")
   Mono<CartItem> findCartItemByCartIdAndItemId(@Param("cartId") Long cartId, @Param("itemId") Long itemId);
 
   /**

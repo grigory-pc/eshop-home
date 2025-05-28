@@ -19,7 +19,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @RequiredArgsConstructor
 @Table(name = "orders")
-public class Order {
+public class Orders {
   @Id
   @Column("id")
   private Long id;
