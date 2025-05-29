@@ -97,7 +97,6 @@ public class ItemServiceImpl implements ItemService {
     }
   }
 
-  //  @Transactional("transactionManager")
   @Override
   public Mono<Void> editCart(Long itemId, String actionRequest) {
     Action action = Action.getValueOf(actionRequest);
