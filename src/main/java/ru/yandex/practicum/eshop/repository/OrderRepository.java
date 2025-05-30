@@ -1,10 +1,12 @@
 package ru.yandex.practicum.eshop.repository;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import ru.yandex.practicum.eshop.entity.Order;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
+import org.springframework.stereotype.Repository;
+import ru.yandex.practicum.eshop.entity.Orders;
 
 /**
  * Получение данных из таблицы Orders.
  */
-public interface OrderRepository extends JpaRepository<Order, Long> {
+@Repository
+public interface OrderRepository extends R2dbcRepository<Orders, Long> {
 }

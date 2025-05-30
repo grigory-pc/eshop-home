@@ -10,26 +10,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 /**
- * Класса товара.
+ * Класс заказа.
  */
 @Getter
 @Setter
 @Builder
 @AllArgsConstructor
 @RequiredArgsConstructor
-@Table(name = "item")
-public class Item {
+@Table(name = "orders")
+public class Orders {
   @Id
   @Column("id")
   private Long id;
-  @Column("title")
-  private String title;
-  @Column("image_path")
-  private String imgPath;
-  @Column("description")
-  private String description;
-  @Column("price")
-  private Double price;
-  @Column("count")
-  private Integer count;
+  @Column("total_sum")
+  private Double totalSum;
 }

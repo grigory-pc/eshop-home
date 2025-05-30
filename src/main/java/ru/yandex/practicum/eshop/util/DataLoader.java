@@ -1,8 +1,8 @@
 package ru.yandex.practicum.eshop.util;
 
-import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.eshop.entity.Cart;
@@ -15,11 +15,11 @@ import ru.yandex.practicum.eshop.repository.ItemRepository;
  */
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class DataLoader implements CommandLineRunner {
   private static final String ITEM_SHORTS_IMG_PATH = "/images/shorts.jpg";
   private static final String ITEM_SUNGLASSES_IMG_PATH = "/images/sunglasses.jpg";
   private static final String ITEM_TSHIRT_IMG_PATH = "/images/tshirt.jpg";
-  private static final Long CART_ID = 1L;
   private static final Double TOTAL_INIT = 0.00;
 
   private final ItemRepository itemRepository;
@@ -52,7 +52,17 @@ public class DataLoader implements CommandLineRunner {
                       .count(0)
                       .build();
 
-    itemRepository.saveAll(List.of(shorts, sunglasses, tShirt));
-    cartRepository.save(new Cart(CART_ID, TOTAL_INIT, new ArrayList<>()));
+    Cart newCart = Cart.builder()
+                       .total(TOTAL_INIT)
+                       .build();
+    cartRepository.save(newCart)
+                  .doOnNext(cart -> System.out.println(
+                      "Сохранена корзина с ID: " + cart.getId()))
+                  .subscribe(System.out::println);
+
+    itemRepository.saveAll(List.of(shorts, sunglasses, tShirt))
+                  .doOnNext(item -> System.out.println(
+                      "Сохранены товары "))
+                  .subscribe(System.out::println);
   }
 }

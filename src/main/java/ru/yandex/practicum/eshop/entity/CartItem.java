@@ -1,33 +1,31 @@
 package ru.yandex.practicum.eshop.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.IdClass;
-import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 /**
  * Класс связи товара с корзиной.
  */
 @Getter
 @Setter
-@Entity
 @Builder
 @AllArgsConstructor
 @RequiredArgsConstructor
-@IdClass(CartItemKey.class)
 @Table(name = "cart_item")
 public class CartItem {
   @Id
-  @Column(name = "cart_id", nullable = false)
+  @Column("id")
+  private Long id;
+  @Column("cart_id")
   private Long cartId;
-  @Id
-  @Column(name = "item_id", nullable = false)
+  @Column("item_id")
   private Long itemId;
+  @Column("count")
   private Integer count;
 }

@@ -4,7 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 /**
- * Исключение в случае, если пришел некорректный тип сортировки.
+ * Исключение в случае исключения при взаимодействии с БД.
  */
 @ResponseStatus(HttpStatus.BAD_REQUEST)
 public class DataBaseRequestException extends RuntimeException {
