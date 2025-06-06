@@ -37,11 +37,11 @@ public class Data {
                 .build();
     }
 
-    public Order getOrder() {
-        return Order.builder()
-                .id(ORDER_ID)
-                .totalSum(getItemPlusCount().getPrice())
-                .build();
+    public Orders getOrder() {
+        return Orders.builder()
+                     .id(ORDER_ID)
+                     .totalSum(getItemPlusCount().getPrice())
+                     .build();
     }
 
     public OrderDto getOrderDto() {
@@ -56,7 +56,7 @@ public class Data {
         return Cart.builder()
                 .id(CART_ID)
                 .total(getItemPlusCount().getPrice())
-                .items(List.of(getItemPlusCount()))
+//                .items(List.of(getItemPlusCount()))
                 .build();
     }
 
@@ -70,18 +70,18 @@ public class Data {
 
     public CartItem getCartItem() {
         return CartItem.builder()
-                .cartId(CART_ID)
-                .itemId(ITEM_ID)
-                .count(1)
-                .build();
+                       .cartId(CART_ID)
+                       .itemId(ITEM_ID)
+                       .count(1)
+                       .build();
 
     }
 
     public OrderItem getOrderItem() {
         return OrderItem.builder()
-                .orderId(ORDER_ID)
-                .itemId(ITEM_ID)
-                .count(1)
-                .build();
+                        .orderId(ORDER_ID)
+                        .itemId(ITEM_ID)
+                        .count(1)
+                        .build();
     }
 }

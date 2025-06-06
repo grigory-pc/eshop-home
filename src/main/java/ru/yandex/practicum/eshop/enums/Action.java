@@ -1,8 +1,8 @@
 package ru.yandex.practicum.eshop.enums;
 
-import ch.qos.logback.core.joran.spi.ActionException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import ru.yandex.practicum.eshop.exceptions.ActionException;
 
 /**
  * Enum для действий с товарами в корзине.

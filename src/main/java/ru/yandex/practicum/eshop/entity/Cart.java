@@ -1,16 +1,8 @@
 package ru.yandex.practicum.eshop.entity;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
-import java.util.List;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -22,21 +14,14 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-@Entity
 @Builder
 @AllArgsConstructor
 @RequiredArgsConstructor
-@Table(name = "carts")
+@Table(name = "cart")
 public class Cart {
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = "id", nullable = false)
+  @Column("id")
   private Long id;
-  @Column(name = "total", nullable = false)
+  @Column("total")
   private Double total;
-  @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-  @JoinTable(name = "cart_item",
-             joinColumns = @JoinColumn(name = "cart_id"),
-             inverseJoinColumns = @JoinColumn(name = "item_id"))
-  private List<Item> items;
 }

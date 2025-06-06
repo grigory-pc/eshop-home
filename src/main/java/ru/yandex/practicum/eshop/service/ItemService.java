@@ -1,8 +1,9 @@
 package ru.yandex.practicum.eshop.service;
 
 import ch.qos.logback.core.joran.spi.ActionException;
-import java.util.List;
-import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import ru.yandex.practicum.eshop.dto.CartDto;
 import ru.yandex.practicum.eshop.dto.ItemDto;
 import ru.yandex.practicum.eshop.dto.OrderDto;
@@ -21,7 +22,7 @@ public interface ItemService {
    * @param pageSize    - количество записей.
    * @return список товаров.
    */
-  Page<ItemDto> getItems(String search, Sorting sort, int pageNumber, int pageSize);
+  Mono<PageImpl<ItemDto>> getItems(String search, Sorting sort, int pageNumber, int pageSize);
 
   /**
    * Изменение состава корзины товаров.
@@ -31,14 +32,14 @@ public interface ItemService {
    *
    * @throws ActionException - исключение в случае некорректного значения в запросе для action.
    */
-  void editCart(Long itemId, String action) throws ActionException;
+  Mono<Void> editCart(Long itemId, String action) throws ActionException;
 
   /**
    * Получение всех товаров корзины.
    *
    * @return список товаров в корзине.
    */
-  CartDto getCartItems();
+  Mono<CartDto> getCartItems();
 
   /**
    * Получение объекта товара по id.
@@ -46,21 +47,21 @@ public interface ItemService {
    * @param id - id товара.
    * @return объекта товара.
    */
-  ItemDto getItem(Long id);
+  Mono<ItemDto> getItem(Long id);
 
   /**
    * Формирование заказа для товаров в корзине.
    *
    * @return id заказа.
    */
-  Long buyItems();
+  Mono<Long> buyItems();
 
   /**
    * Получение всех заказов.
    *
    * @return список заказов.
    */
-  List<OrderDto> getOrders();
+  Flux<OrderDto> getOrders();
 
   /**
    * Получение объекта заказа по id.
@@ -68,5 +69,5 @@ public interface ItemService {
    * @param id - id заказа.
    * @return объекта заказа.
    */
-  OrderDto getOrderItems(Long id);
+  Mono<OrderDto> getOrderItems(Long id);
 }
