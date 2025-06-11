@@ -1,5 +1,6 @@
 plugins {
     id("java")
+    id("org.openapi.generator") version "7.12.0"
 }
 repositories {
     mavenCentral()
@@ -36,3 +37,17 @@ dependencies {
 
     testAnnotationProcessor("org.projectlombok:lombok")
 }
+
+//tasks.withType<GenerateTask> {
+//    generatorName.set("spring")
+//    inputSpec.set("$projectDir/src/main/resources/api-spec.yaml")
+//    outputDir.set("$projectDir/build/generated")
+//    modelPackage.set("ru.ya.domain")
+//    apiPackage.set("ru.ya.api")
+//    configOptions.set(mapOf(
+//            "sourceFolder" to "src/gen/java/main/codegen",
+//            "interfaceOnly" to "false",
+//            "library" to "spring-boot",
+//            "useTags" to "true"
+//    ))
+//}
