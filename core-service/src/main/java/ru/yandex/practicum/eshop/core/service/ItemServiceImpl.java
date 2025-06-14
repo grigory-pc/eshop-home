@@ -160,7 +160,7 @@ public class ItemServiceImpl implements ItemService {
                            .flatMap(this::fetchAndProcessCartItems)
                            .flatMap(this::createAndSaveOrder)
                            .flatMap(this::saveOrderItems)
-                           .flatMap(this::flushItemAndCart) // Изменен метод
+                           .flatMap(this::flushItemAndCart)
                            .map(Orders::getId)
                            .onErrorResume(e -> {
                              log.error(MESSAGE_LOG_DB_RESPONSE_ERROR.getMessage(), e);
