@@ -1,8 +1,10 @@
+import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 plugins {
     id("java")
     id("org.springframework.boot") version "3.3.10"
     id("io.spring.dependency-management") version "1.1.4"
+    id("org.openapi.generator") version "7.12.0"
 }
 
 repositories {
@@ -47,4 +49,44 @@ tasks.test {
 
 tasks.bootJar {
     mainClass.set("ru.yandex.practicum.eshop.core.Main")
+}
+
+tasks.withType<GenerateTask> {
+    generatorName.set("spring")
+    inputSpec.set("$projectDir/src/main/resources/payment-client.yaml")
+    outputDir.set("$projectDir/build/generated")
+    modelPackage.set("ru.yandex.practicum.eshop.core.domain")
+    apiPackage.set("ru.yandex.practicum.eshop.core.api")
+    configOptions.set(mapOf(
+            "sourceFolder" to "src/gen/java/main/codegen",
+            "interfaceOnly" to "false",
+            "library" to "spring-boot",
+            "useTags" to "true",
+            "dateLibrary" to "java8",
+            "groupId" to "ru.yandex.practicum.eshop.core",
+            "artifactId" to "payment-controller",
+            "artifactVersion" to "1.0.0",
+            "apiPackage" to "ru.yandex.practicum.eshop.core.api",
+            "modelPackage" to "ru.yandex.practicum.eshop.core.domain",
+            "invokerPackage" to "ru.yandex.practicum.eshop.core.client",
+            "hideGenerationTimestamp" to "true",
+            "generateApis" to "false",
+            "generateModels" to "true",
+            "generateSupportingFiles" to "false",
+            "configPackage" to "ru.yandex.practicum.eshop.core.config",
+            "delegatePattern" to "true",
+            "withXml" to "false",
+            "useBeanValidation" to "true",
+            "useRxJava2" to "false",
+            "useFeign" to "false",
+            "useOkHttp" to "true"
+    ))
+}
+
+sourceSets {
+    named("main") {
+        java {
+            srcDirs(listOf("src/main/java", "src/gen/java/main/codegen"))
+        }
+    }
 }

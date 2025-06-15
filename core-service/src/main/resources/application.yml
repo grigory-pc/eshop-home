@@ -18,6 +18,6 @@ jdbc:
 
 client:
   payment-service:
-    base-url: "http://localhost:8081/payment-service"
+    base-url: "http://localhost:8081/payment-service/buy?cartId"
     connect-timeout-ms: 1000
     response-timeout-ms: 1000

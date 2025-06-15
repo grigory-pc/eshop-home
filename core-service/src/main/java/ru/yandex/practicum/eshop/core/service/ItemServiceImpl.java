@@ -1,6 +1,7 @@
 package ru.yandex.practicum.eshop.core.service;
 
-import ru.yandex.practicum.eshop.core.entity.Orders;
+import org.springframework.web.reactive.function.client.WebClient;
+import ru.yandex.practicum.eshop.core.dto.CreatePaymentResponse;
 import ru.yandex.practicum.eshop.core.enums.Action;
 import ru.yandex.practicum.eshop.core.exceptions.ActionException;
 import ru.yandex.practicum.eshop.core.exceptions.DataBaseRequestException;
@@ -18,8 +19,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
 import ru.yandex.practicum.eshop.core.dto.CartDto;
 import ru.yandex.practicum.eshop.core.dto.ItemDto;
 import ru.yandex.practicum.eshop.core.dto.OrderDto;
@@ -37,9 +36,6 @@ import ru.yandex.practicum.eshop.core.repository.OrderRepository;
 
 import static ru.yandex.practicum.eshop.core.enums.MessagesLog.MESSAGE_LOG_DB_GET_REQUEST;
 import static ru.yandex.practicum.eshop.core.enums.MessagesLog.MESSAGE_LOG_DB_RESPONSE_ERROR;
-import static ru.yandex.practicum.eshop.core.enums.MessagesLog.MESSAGE_LOG_DB_SAVE_REQUEST;
-import static ru.yandex.practicum.eshop.core.enums.MessagesLog.MESSAGE_LOG_FLUSH_CART;
-import static ru.yandex.practicum.eshop.core.enums.MessagesLog.MESSAGE_LOG_FLUSH_CART_SUCCESS;
 import static ru.yandex.practicum.eshop.core.enums.MessagesLog.MESSAGE_LOG_ITEMS_SIZE;
 
 @Slf4j
@@ -47,13 +43,17 @@ import static ru.yandex.practicum.eshop.core.enums.MessagesLog.MESSAGE_LOG_ITEMS
 @RequiredArgsConstructor
 public class ItemServiceImpl implements ItemService {
   private static final Long CART_ID = 1L;
-  private static final Double TOTAL_INIT = 0.00;
+  public static final String BUY_REQUEST_PARAMETER = "cartId";
+  public static final String ITEM_NOT_FOUND = "Товар не найден в корзине";
+  public static final String ITEM_NOT_FOUND_IN_CART = "Товар не найден в корзине";
   private final ItemMapper itemMapper;
   private final ItemRepository itemRepository;
   private final CartRepository cartRepository;
   private final OrderRepository orderRepository;
   private final CartItemRepository cartItemRepository;
   private final OrderItemRepository orderItemRepository;
+  private final WebClient paymentServiceClient;
+
 
   @Override
   public Mono<PageImpl<ItemDto>> getItems(String search, Sorting sort, int pageNumber,
@@ -153,21 +153,14 @@ public class ItemServiceImpl implements ItemService {
 
   @Override
   public Mono<Long> buyItems() {
-    return Mono.defer(() -> {
-      log.info(MESSAGE_LOG_DB_SAVE_REQUEST.getMessage());
-
-      return cartRepository.findById(CART_ID)
-                           .flatMap(this::fetchAndProcessCartItems)
-                           .flatMap(this::createAndSaveOrder)
-                           .flatMap(this::saveOrderItems)
-                           .flatMap(this::flushItemAndCart)
-                           .map(Orders::getId)
-                           .onErrorResume(e -> {
-                             log.error(MESSAGE_LOG_DB_RESPONSE_ERROR.getMessage(), e);
-                             return Mono.error(new DataBaseRequestException(
-                                 MESSAGE_LOG_DB_RESPONSE_ERROR.getMessage(), e));
-                           });
-    });
+    return paymentServiceClient
+        .post()
+        .uri(uriBuilder -> uriBuilder
+            .queryParam(BUY_REQUEST_PARAMETER, CART_ID)
+            .build())
+        .retrieve()
+        .bodyToMono(CreatePaymentResponse.class)
+        .map(CreatePaymentResponse::getOrderId);
   }
 
   @Override
@@ -201,13 +194,13 @@ public class ItemServiceImpl implements ItemService {
       case DELETE -> cartItemRepository.findCartItemByCartIdAndItemId(CART_ID, itemId)
                                        .map(Optional::ofNullable)
                                        .switchIfEmpty(Mono.error(
-                                           new ActionException("Товар не найден в корзине")))
+                                           new ActionException(ITEM_NOT_FOUND)))
                                        .flatMap(optionalCartItem -> optionalCartItem.map(
                                                                                         cartItemRepository::delete)
                                                                                     .orElse(
                                                                                         Mono.error(
                                                                                             new ActionException(
-                                                                                                "Товар не найден в корзине"))));
+                                                                                                ITEM_NOT_FOUND))));
     };
   }
 
@@ -232,26 +225,6 @@ public class ItemServiceImpl implements ItemService {
     return orderItemRepository.findOrderItemsByOrderId(id)
                               .collectMap(OrderItem::getItemId, OrderItem::getCount);
   }
-
-
-  private Mono<Orders> flushItemAndCart(Orders orders) {
-    return Mono.defer(() -> {
-      log.info(MESSAGE_LOG_FLUSH_CART.getMessage());
-
-      Cart cart = new Cart(CART_ID, TOTAL_INIT);
-      return cartRepository.save(cart)
-                           .then(cartItemRepository.deleteAllByCartId(CART_ID))
-                           .then(itemRepository.updateAllCountToZero())
-                           .doOnSuccess(v -> log.info(MESSAGE_LOG_FLUSH_CART_SUCCESS.getMessage()))
-                           .thenReturn(orders)
-                           .onErrorResume(e -> {
-                             log.error(MESSAGE_LOG_DB_RESPONSE_ERROR.getMessage(), e);
-                             return Mono.error(new DataBaseRequestException(
-                                 MESSAGE_LOG_DB_RESPONSE_ERROR.getMessage(), e));
-                           });
-    });
-  }
-
 
   private static Pageable getPageableItemsRequest(Sorting sort, int pageNumber, int pageSize) {
     return switch (sort) {
@@ -296,7 +269,7 @@ public class ItemServiceImpl implements ItemService {
     return cartItemRepository.findCartItemByCartIdAndItemId(CART_ID, itemId)
                              .map(Optional::ofNullable)
                              .switchIfEmpty(
-                                 Mono.error(new ActionException("Товар не найден в корзине")))
+                                 Mono.error(new ActionException(ITEM_NOT_FOUND_IN_CART)))
                              .flatMap(optionalCartItem -> optionalCartItem.map(cartItem -> {
                                if (cartItem.getCount() > 1) {
                                  cartItem.setCount(cartItem.getCount() - 1);
@@ -307,7 +280,7 @@ public class ItemServiceImpl implements ItemService {
                                  return cartItemRepository.delete(cartItem);
                                }
                              }).orElse(
-                                 Mono.error(new ActionException("Товар не найден в корзине"))))
+                                 Mono.error(new ActionException(ITEM_NOT_FOUND_IN_CART))))
                              .then(updateCartTotal(existingCart));
   }
 
@@ -332,56 +305,5 @@ public class ItemServiceImpl implements ItemService {
                              .collectList()
                              .flatMap(ids -> itemRepository.findAllById(ids)
                                                            .collectList());
-  }
-
-  private Mono<Tuple2<Cart, List<CartItem>>> fetchAndProcessCartItems(Cart cart) {
-    return cartItemRepository.findCartItemsByCartId(cart.getId())
-                             .collectList()
-                             .map(items -> Tuples.of(cart, items))
-                             .onErrorResume(e -> {
-                               log.error(MESSAGE_LOG_DB_RESPONSE_ERROR.getMessage(), e);
-                               return Mono.error(new DataBaseRequestException(
-                                   MESSAGE_LOG_DB_RESPONSE_ERROR.getMessage(), e));
-                             });
-  }
-
-  private Mono<Tuple2<Orders, List<CartItem>>> createAndSaveOrder(
-      Tuple2<Cart, List<CartItem>> cartAndItems) {
-    Cart cart = cartAndItems.getT1();
-    List<CartItem> cartItems = cartAndItems.getT2();
-
-    Orders orders = Orders.builder()
-                          .totalSum(cart.getTotal())
-                          .build();
-
-    return orderRepository.save(orders)
-                          .map(ordersSaved -> Tuples.of(ordersSaved, cartItems));
-  }
-
-  private Mono<Orders> saveOrderItems(Tuple2<Orders, List<CartItem>> orderAndCartItems) {
-    Orders orders = orderAndCartItems.getT1();
-    List<CartItem> cartItems = orderAndCartItems.getT2();
-
-    return Flux.fromIterable(cartItems)
-               .flatMap(cartItem -> itemRepository.findById(cartItem.getItemId())
-                                                  .map(item -> createOrderItem(orders, item,
-                                                                               cartItem.getCount())))
-               .collectList()
-               .flatMap(orderItems -> orderItemRepository.saveAll(orderItems)
-                                                         .collectList()
-                                                         .thenReturn(orders))
-               .onErrorResume(e -> {
-                 log.error(MESSAGE_LOG_DB_RESPONSE_ERROR.getMessage(), e);
-                 return Mono.error(new DataBaseRequestException(
-                     MESSAGE_LOG_DB_RESPONSE_ERROR.getMessage(), e));
-               });
-  }
-
-  private OrderItem createOrderItem(Orders orders, Item item, int count) {
-    return OrderItem.builder()
-                    .orderId(orders.getId())
-                    .itemId(item.getId())
-                    .count(count)
-                    .build();
   }
 }
