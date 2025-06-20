@@ -64,7 +64,7 @@ tasks.withType<GenerateTask> {
             "useTags" to "true",
             "dateLibrary" to "java8",
             "groupId" to "ru.yandex.practicum.eshop.payment.service",
-            "artifactId" to "payment-controller",
+            "artifactId" to "payment-service-controller",
             "artifactVersion" to "1.0.0",
             "apiPackage" to "ru.yandex.practicum.eshop.payment.service.api",
             "modelPackage" to "ru.yandex.practicum.eshop.payment.service.domain",

@@ -64,7 +64,7 @@ tasks.withType<GenerateTask> {
             "useTags" to "true",
             "dateLibrary" to "java8",
             "groupId" to "ru.yandex.practicum.eshop.core",
-            "artifactId" to "payment-controller",
+            "artifactId" to "payment-service-request",
             "artifactVersion" to "1.0.0",
             "apiPackage" to "ru.yandex.practicum.eshop.core.api",
             "modelPackage" to "ru.yandex.practicum.eshop.core.domain",
@@ -81,12 +81,4 @@ tasks.withType<GenerateTask> {
             "useFeign" to "false",
             "useOkHttp" to "true"
     ))
-}
-
-sourceSets {
-    named("main") {
-        java {
-            srcDirs(listOf("src/main/java", "src/gen/java/main/codegen"))
-        }
-    }
 }

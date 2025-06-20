@@ -7,7 +7,7 @@ servers:
   - url: http://payment-service/
     description: Сервис платежей
 paths:
-  /buy:
+  /payment-service/buy:
     post:
       summary: Создание платежа по ID корзины
       operationId: createPaymentByCartId
@@ -29,6 +29,12 @@ paths:
                   orderId:
                     type: integer
                     format: int64
-                    description: ID созданного заказа
 components:
-  schemas: {}
+  schemas:
+    CreatePaymentByCartIdResponseOk:
+      type: object
+      properties:
+        orderId:
+          type: integer
+          format: int64
+          description: ID созданного заказа
